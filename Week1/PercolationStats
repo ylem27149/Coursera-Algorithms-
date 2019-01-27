@@ -1,0 +1,74 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.StdIn;
+import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.StdRandom;
+import edu.princeton.cs.algs4.StdStats;
+
+public class PercolationStats {
+    private int T;       //
+    private int N;      // N-by-N grid
+    private int[] threshold;    //  The threshold for T independent experiments on n-by-n grid
+
+    public PercolationStats(int n, int trials)
+    // perform trials independent experiments on an n-by-n grid
+    {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n should be larger than 0.");
+        }
+        if (trials <= 0) {
+            throw new IllegalArgumentException("trials should be larger than 0.");
+        }
+
+        T = trials;
+        threshold = new int[T];
+        N = n;
+
+        for (int i = 0; i < T; i++) {
+            Percolation per = new Percolation(N);   //原来可以直接引用同文件中写好的class的吗。总不至于是库函数中就有这个吧。
+            while (!per.percolates()) {
+                per.open(StdRandom.uniform(1, N), StdRandom.uniform(1, N));
+            }
+            threshold[i] = per.numberOfOpenSites() / (N * N);
+        }
+
+    }
+
+    public double mean()                          // sample mean of percolation threshold
+    {
+        return (StdStats.mean(threshold));
+    }
+
+    public double stddev()                        // sample standard deviation of percolation threshold
+    {
+        return (StdStats.stddev(threshold));
+    }
+
+    public double confidenceLo()                  // low  endpoint of 95% confidence interval
+    {
+        return (mean() - 1.96 * stddev() / Math.sqrt(T));
+        //这个StdStats里没有现成的，这样不用sqrt就是不可能的。虽然好像要求不让用Math库函数=。=
+    }
+
+    public double confidenceHi()                  // high endpoint of 95% confidence interval
+    {
+        return (mean() + 1.96 * stddev() / Math.sqrt(T));
+    }
+
+    public static void main(String[] args)        // test client (described below)
+    {
+        int n = StdIn.readInt();
+        int t = StdIn.readInt();
+        PercolationStats stats = new PercolationStats(n, t);
+        StdOut.println("mean =" + stats.mean());
+        StdOut.println("standard deviation =" + stats.stddev());
+        StdOut.println(
+                "95% confidence interval = [" + stats.confidenceLo() + "," + stats.confidenceHi()
+                        + "]");
+
+    }
+}
