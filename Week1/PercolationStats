@@ -1,7 +1,9 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description:参考 http://www.voidcn.com/article/p-rssjxsom-zu.html进行了修改。主要是
+ *  1.采用两个全局private doule值取代了全局数组threshold。2.修改threshold为doulbe（int相除肯定会得到的P就约等于0了。。我之前交的作业是怎么还能得出结果的= =）
+ 就是不知道为什么还是跑不动唉。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.StdIn;
@@ -10,9 +12,10 @@ import edu.princeton.cs.algs4.StdRandom;
 import edu.princeton.cs.algs4.StdStats;
 
 public class PercolationStats {
-    private int T;       //
-    private int N;      // N-by-N grid
-    private int[] threshold;    //  The threshold for T independent experiments on n-by-n grid
+    private final int t;       //
+    private final double mean;
+    private final double stddev;
+
 
     public PercolationStats(int n, int trials)
     // perform trials independent experiments on an n-by-n grid
@@ -24,39 +27,40 @@ public class PercolationStats {
             throw new IllegalArgumentException("trials should be larger than 0.");
         }
 
-        T = trials;
-        threshold = new int[T];
-        N = n;
-
-        for (int i = 0; i < T; i++) {
-            Percolation per = new Percolation(N);   //原来可以直接引用同文件中写好的class的吗。总不至于是库函数中就有这个吧。
+        t = trials;
+        double[] threshold = new double[t];
+        //  the threshold for t independent experiments on n-by-n grid.第一遍顺手给写成int数组了= =
+        for (int i = 0; i < t; i++) {
+            Percolation per = new Percolation(n);   //原来可以直接引用同文件中写好的class的吗。
             while (!per.percolates()) {
-                per.open(StdRandom.uniform(1, N), StdRandom.uniform(1, N));
+                per.open(StdRandom.uniform(1, n), StdRandom.uniform(1, n));
             }
-            threshold[i] = per.numberOfOpenSites() / (N * N);
+            threshold[i] = per.numberOfOpenSites() / (double) n * n;
         }
+        mean = StdStats.mean(threshold);
+        stddev = StdStats.stddev(threshold);
 
     }
 
     public double mean()                          // sample mean of percolation threshold
     {
-        return (StdStats.mean(threshold));
+        return mean;
     }
 
     public double stddev()                        // sample standard deviation of percolation threshold
     {
-        return (StdStats.stddev(threshold));
+        return stddev;
     }
 
     public double confidenceLo()                  // low  endpoint of 95% confidence interval
     {
-        return (mean() - 1.96 * stddev() / Math.sqrt(T));
+        return (mean() - 1.96 * stddev() / Math.sqrt(t));
         //这个StdStats里没有现成的，这样不用sqrt就是不可能的。虽然好像要求不让用Math库函数=。=
     }
 
     public double confidenceHi()                  // high endpoint of 95% confidence interval
     {
-        return (mean() + 1.96 * stddev() / Math.sqrt(T));
+        return (mean() + 1.96 * stddev() / Math.sqrt(t));
     }
 
     public static void main(String[] args)        // test client (described below)
