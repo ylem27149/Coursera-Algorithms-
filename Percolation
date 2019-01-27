@@ -1,0 +1,112 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:all methods should take constant time plus a constant number of calls 不确定是不是满足w
+ **************************************************************************** */
+
+
+// all methods should take constant time plus a constant number of calls to the union–find methods union(), find(), connected(), and count().
+
+import edu.princeton.cs.algs4.WeightedQuickUnionUF;
+
+public class Percolation {
+
+    private boolean[][] percol; // n-by-n grid
+    private int opensites;   // number of opensites
+    private int N;
+    // row and column indices are integers between 1 and n,while the array indices are between 1~N-1
+    private WeightedQuickUnionUF uf;
+
+    public Percolation(int n)                // create n-by-n grid, with all sites blocked
+    {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n should be larger than 0.");
+        }
+        N = n;
+        percol
+                = new boolean[N][N];     // The boolen array initialization is false ,which means all sites are blocked
+
+        opensites = 0;
+        uf = new WeightedQuickUnionUF(N * N + 2);  // N-by-N grid and two virtual sitej
+        for (int i = 1; i <= N; i++)
+            uf.union(ufindex(1, i), N * N);
+        for (int i = 1; i <= N; i++)
+            uf.union(ufindex(N, i), N * N + 1);
+
+
+    }
+
+    public void open(int row, int col)    // open site (row, col) if it is not open already
+    {
+        if (row <= 0 || row > N) {
+            throw new IllegalArgumentException("row index " + row + " is not between 1 and " + N);
+        }
+        if (col <= 0 || col > N) {
+            throw new IllegalArgumentException(
+                    "column index " + col + " is not between 1 and " + N);
+        }
+        if (!isOpen(row, col)) {
+            percol[row - 1][col - 1] = true;
+            opensites++;
+            if (row != 1)   // 为了不让程序在这里卡住，应该多判断几次。毕竟这里跟其他地方不同，出现越界不应该让程序停止的。
+                if (isOpen(row - 1, col)) uf.union(ufindex(row, col), ufindex(row - 1, col));
+            if (row != N)
+                if (isOpen(row + 1, col)) uf.union(ufindex(row, col), ufindex(row + 1, col));
+            if (col != N)
+                if (isOpen(row, col + 1)) uf.union(ufindex(row, col), ufindex(row, col + 1));
+            if (col != 1)
+                if (isOpen(row, col - 1)) uf.union(ufindex(row, col), ufindex(row, col - 1));
+        }
+    }
+
+    private int ufindex(int row, int col) {
+        return (row - 1) * N + col - 1;
+    }
+
+    public boolean isOpen(int row, int col)  // is site (row, col) open?
+    {
+        if (row <= 0 || row > N) {
+            throw new IllegalArgumentException("row index " + row + " is not between 1 and " + N);
+        }
+        if (col <= 0 || col > N) {
+            throw new IllegalArgumentException(
+                    "column index " + col + " is not between 1 and " + N);
+        }
+        return (percol[row - 1][col - 1]);
+    }
+
+    public boolean isFull(int row, int col)  // is site (row, col) full?
+    {
+        if (row <= 0 || row > N) {
+            throw new IllegalArgumentException("row index " + row + " is not between 1 and " + N);
+        }
+        if (col <= 0 || col > N) {
+            throw new IllegalArgumentException(
+                    " column index " + col + " is not between 1 and " + N);
+        }
+
+        if (isOpen(row, col)) {
+            if (uf.connected(ufindex(row, col), N * N))
+                return true;
+        }
+        return false;
+    }
+
+
+    public int numberOfOpenSites()       // number of open sites
+    {
+        return opensites;
+    }
+
+    public boolean percolates()              // does the system percolate?
+    {
+
+        return uf.connected(N * N, N * N + 1);
+
+    }
+
+    public static void main(String[] args)   // test client (optional)
+    {
+
+    }
+}
