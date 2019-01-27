@@ -3,20 +3,15 @@ https://www.coursera.org/learn/algorithms-part1
 
 2019.1.27 终于过了TUT
 
-ASSESSMENT SUMMARY
-
-Compilation:  PASSED
-API:          PASSED
-
-Spotbugs:     PASSED
-PMD:          PASSED
-Checkstyle:   FAILED (0 errors, 3 warnings)
-
-Correctness:  33/33 tests passed
-
-Memory:       8/8 tests passed
-
-Timing:       20/20 tests passed
+>ASSESSMENT SUMMARY
+>Compilation:  PASSED
+>API:          PASSED
+>Spotbugs:     PASSED
+>PMD:          PASSED
+>Checkstyle:   FAILED (0 errors, 3 warnings)
+>Correctness:  33/33 tests passed
+>Memory:       8/8 tests passed
+>Timing:       20/20 tests passed
 
 Aggregate score: 100.00%
 
