@@ -1,7 +1,8 @@
 /* *****************************************************************************
  *  name:
  *  Date:
- *  Description:添加新的WQU来检测isfull，避免回流。并且精简了一些多重if判断。
+ *  Description:参考https://www.jianshu.com/p/e12322891407
+ *  把越界检查放到Index里面,删掉open和isFull中的相关代码。
  **************************************************************************** */
 
 
@@ -43,12 +44,35 @@ public class Percolation {
                             n * n + 1);  // use the n*n+1 node as the virtual bottom site
         }
 
-
     }
-
 
     public void open(int row, int col)    // open site (row, col) if it is not open already
     {
+        int index = ufindex(row, col);
+        if (!isOpen(row, col)) {
+            percol[row - 1][col - 1] = true;
+            opensites++;
+            if (row != 1 && isOpen(row - 1, col)) {
+                uffull.union(index, ufindex(row - 1, col));
+                ufper.union(index, ufindex(row - 1, col));
+            }
+            if (row != n && isOpen(row + 1, col)) {
+                uffull.union(index, ufindex(row + 1, col));
+                ufper.union(index, ufindex(row + 1, col));
+            }
+            if (col != n && isOpen(row, col + 1)) {
+                uffull.union(index, ufindex(row, col + 1));
+                ufper.union(index, ufindex(row, col + 1));
+            }
+            if (col != 1 && isOpen(row, col - 1)) {
+                uffull.union(index, ufindex(row, col - 1));
+                ufper.union(index, ufindex(row, col - 1));
+            }
+        }
+    }
+
+    private int ufindex(int row, int col) {
+
         if (row <= 0 || row > n) {
             throw new IllegalArgumentException("row index " + row + " is not between 1 and " + n);
         }
@@ -56,29 +80,6 @@ public class Percolation {
             throw new IllegalArgumentException(
                     "column index " + col + " is not between 1 and " + n);
         }
-        if (!isOpen(row, col)) {
-            percol[row - 1][col - 1] = true;
-            opensites++;
-            if (row != 1 && isOpen(row - 1, col)) {
-                uffull.union(ufindex(row, col), ufindex(row - 1, col));
-                ufper.union(ufindex(row, col), ufindex(row - 1, col));
-            }
-            if (row != n && isOpen(row + 1, col)) {
-                uffull.union(ufindex(row, col), ufindex(row + 1, col));
-                ufper.union(ufindex(row, col), ufindex(row + 1, col));
-            }
-            if (col != n && isOpen(row, col + 1)) {
-                uffull.union(ufindex(row, col), ufindex(row, col + 1));
-                ufper.union(ufindex(row, col), ufindex(row, col + 1));
-            }
-            if (col != 1 && isOpen(row, col - 1)) {
-                uffull.union(ufindex(row, col), ufindex(row, col - 1));
-                ufper.union(ufindex(row, col), ufindex(row, col - 1));
-            }
-        }
-    }
-
-    private int ufindex(int row, int col) {
         return (row - 1) * n + col - 1;
     }
 
@@ -96,15 +97,9 @@ public class Percolation {
 
     public boolean isFull(int row, int col)  // is site (row, col) full?
     {
-        if (row <= 0 || row > n) {
-            throw new IllegalArgumentException("row index " + row + " is not between 1 and " + n);
-        }
-        if (col <= 0 || col > n) {
-            throw new IllegalArgumentException(
-                    " column index " + col + " is not between 1 and " + n);
-        }
+        int index = ufindex(row, col);
         if (n > 1)
-            return isOpen(row, col) && uffull.connected(ufindex(row, col), n * n);
+            return isOpen(row, col) && uffull.connected(index, n * n);
         else return isOpen(row, col);
     }
 
