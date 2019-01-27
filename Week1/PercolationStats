@@ -1,9 +1,8 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:参考 http://www.voidcn.com/article/p-rssjxsom-zu.html进行了修改。主要是
- *  1.采用两个全局private doule值取代了全局数组threshold。2.修改threshold为doulbe（int相除肯定会得到的P就约等于0了。。我之前交的作业是怎么还能得出结果的= =）
- 就是不知道为什么还是跑不动唉。
+ *  Description:修改uniform参数，给threshold计算式的分母加上（）。
+ *  （我说这都什么弱智错误=。=
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.StdIn;
@@ -29,13 +28,23 @@ public class PercolationStats {
 
         t = trials;
         double[] threshold = new double[t];
-        //  the threshold for t independent experiments on n-by-n grid.第一遍顺手给写成int数组了= =
+        //  the threshold for t independent experiments on n-by-n grid.
+
         for (int i = 0; i < t; i++) {
-            Percolation per = new Percolation(n);   //原来可以直接引用同文件中写好的class的吗。
+            Percolation per = new Percolation(n);
             while (!per.percolates()) {
-                per.open(StdRandom.uniform(1, n), StdRandom.uniform(1, n));
+                int row = StdRandom
+                        .uniform(1, n + 1);        // uniform是前闭后开
+                int col = StdRandom.uniform(1, n + 1);
+                while (per.isOpen(row, col)) {
+                    row = StdRandom.uniform(1, n + 1);
+                    col = StdRandom.uniform(1, n + 1);
+                }
+                per.open(row, col);
             }
-            threshold[i] = per.numberOfOpenSites() / (double) n * n;
+            threshold[i] = per.numberOfOpenSites() / (double) (n
+                    * n);
+            // 分母要加括号
         }
         mean = StdStats.mean(threshold);
         stddev = StdStats.stddev(threshold);
@@ -55,7 +64,7 @@ public class PercolationStats {
     public double confidenceLo()                  // low  endpoint of 95% confidence interval
     {
         return (mean() - 1.96 * stddev() / Math.sqrt(t));
-        //这个StdStats里没有现成的，这样不用sqrt就是不可能的。虽然好像要求不让用Math库函数=。=
+     
     }
 
     public double confidenceHi()                  // high endpoint of 95% confidence interval
