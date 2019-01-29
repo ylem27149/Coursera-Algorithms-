@@ -1,7 +1,8 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:参考https://algs4.cs.princeton.edu/13stacks/ResizingArrayStack.java.html
+ *  Description:
+ * 修改deque为随机出栈。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.StdRandom;
@@ -42,8 +43,10 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
     {
         if (N == 0)
             throw new NoSuchElementException("can't use dequeue() when the RandomQueue is empty.");
-        Item item = a[N - 1];
-        a[N - 1] = null;                              // to avoid loitering
+        int random = StdRandom.uniform(0, N);
+        Item item = a[random];
+        a[random] = a[N - 1];         // to avoid empty space in the length-N array
+        a[N - 1] = null;              // to avoid loitering
         N--;
         // shrink size of array if necessary
         if (N > 0 && N == a.length / 4) resize(a.length / 2);
