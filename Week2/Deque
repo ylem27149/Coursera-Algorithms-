@@ -1,0 +1,136 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:2019.1.28
+ *  Description:
+ **************************************************************************** */
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+public class Deque<Item> implements Iterable<Item> {
+    private Node first; // the front element in the queue
+    private Node last; // the end element in the queue
+    private int N; //  the number of elements in the Deque
+
+    private class Node { // 定义了结点的嵌套类
+        Item item;
+        Node next;
+        Node front;     // 因为会从后面往前删除，加了一个反向的指针以便更新last节点
+    }
+
+
+    public Deque()                           // construct an empty deque
+    {
+        // empty的话，根本没什么好写的啊。
+    }
+
+    public boolean isEmpty()                 // is the deque empty?
+    {
+        return first == null;
+    }
+
+    public int size()                        // return the number of items on the deque
+    {
+        return N;
+    }
+
+    public void addFirst(Item item)          // add the item to the front
+    {
+        if (item == null) {
+            throw new IllegalArgumentException("addFirst has a null input.");
+        }
+        if (N == 0) {
+
+            first = new Node();
+            first.item = item;
+            last = first;       //这里应该不是，last会一直指向first吧。而是指向了旧的first所对应的对象？要不然oldfirst也会一直指向first了
+            N++;
+        }
+        else {
+            Node oldfirst = first;
+            first = new Node();
+            first.item = item;
+            first.next = oldfirst;
+            oldfirst.front = first;
+            N++;
+
+        }
+    }
+
+    public void addLast(Item item)           // add the item to the end
+    {
+        if (item == null) {
+            throw new IllegalArgumentException("addLast has a null input.");
+        }
+        if (N == 0) {
+
+            last = new Node();
+            last.item = item;
+            first = last;
+            N++;
+        }
+        else {
+            Node oldlast = last;
+            last = new Node();
+            last.item = item;
+            last.front = oldlast;
+            oldlast.next = last;
+            N++;
+        }
+    }
+
+    public Item removeFirst()                // remove and return the item from the front
+    {
+        if (N == 0)
+            throw new NoSuchElementException("The queue is empty.");
+        Node oldfirst = first;
+        first = first.next;
+        N--;
+        return oldfirst.item;
+    }
+
+    public Item removeLast()                 // remove and return the item from the end
+    {
+        if (N == 0)
+            throw new NoSuchElementException("The queue is empty.");
+        Node oldlast = last;
+        last = last.front;
+        N--;
+        return oldlast.item;
+    }
+
+    public Iterator<Item> iterator()         // return an iterator over items in order from front to end
+    {
+        {
+            return new FrontToEndIterator();
+        }
+        //在类中添加一个方法 iterator() 并返回一个迭代器
+
+
+    }
+
+    private class FrontToEndIterator implements Iterator<Item>
+
+            //嵌套类private class
+    {
+        private Node current = first;
+
+        public boolean hasNext() {      // 会检测 current 是否为 null
+            return current != null;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException("Don't call remove() method in the iterator");
+        }
+
+        public Item next() {   // next() 方法会保存当前元素的引用，将 current 变量指向链表中的下个结点并返回所保存的引用。
+            if (current.next == null)
+                throw new NoSuchElementException(
+                        "there are no more items to return in iterator next()");
+            Item item = current.item;
+            current = current.next;
+            return item;
+        }
+
+    }
+}
