@@ -1,0 +1,100 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:参考https://algs4.cs.princeton.edu/13stacks/ResizingArrayStack.java.html
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.StdRandom;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+public class RandomizedQueue<Item> implements Iterable<Item> {
+    private int N;      // the number of elements in the RandomizedQueue, not the space of the array
+    private Item[] a; // RandomizedQueue entries
+
+
+    public RandomizedQueue()                 // construct an empty randomized queue
+    {
+        a = (Item[]) new Object[2];
+        N = 0;
+    }
+
+    public boolean isEmpty()                 // is the randomized queue empty?
+    {
+        return N == 0;
+    }
+
+    public int size()                        // return the number of items on the randomized queue
+    {
+        return N;
+    }
+
+    public void enqueue(Item item)           // add the item
+    {
+        if (item == null)
+            throw new IllegalArgumentException("don't enquene null element");
+        if (N == a.length) resize(2 * a.length);
+        a[N++] = item;      //虽然说是queue，但是由于删除和迭代顺序都是随机的，插入顺序其实也不太有所谓，就顺着写吧，也方便
+    }
+
+    public Item dequeue()                    // remove and return a random item
+    {
+        if (N == 0)
+            throw new NoSuchElementException("can't use dequeue() when the RandomQueue is empty.");
+        Item item = a[N - 1];
+        a[N - 1] = null;                              // to avoid loitering
+        N--;
+        // shrink size of array if necessary
+        if (N > 0 && N == a.length / 4) resize(a.length / 2);
+        return item;
+
+    }
+
+    public Item sample()                     // return a random item (but do not remove it)
+    {
+        if (N == 0)
+            throw new NoSuchElementException("can't use sample() when the RandomQueue is empty.");
+        return a[StdRandom.uniform(0, N)];
+    }
+
+    // resize the underlying array holding the elements
+    private void resize(int capacity) {
+        assert capacity >= N;
+        Item[] temp = (Item[]) new Object[capacity];
+        for (int i = 0; i < N; i++) {
+            temp[i] = a[i];
+        }
+        a = temp;
+    }
+
+
+    public Iterator<Item> iterator()         // return an independent iterator over items in random order
+    {
+        return new RandomArrayIterator();
+    }
+
+    private class RandomArrayIterator implements Iterator<Item> {
+        private int[] random = StdRandom.permutation(N);
+        // create a random permutation of 0,1,2...N-1 as the iteration order
+        private int i = 0;
+
+        public boolean hasNext() {
+            return i < N;
+        }
+
+        public Item next() {
+            if (!hasNext())
+                throw new NoSuchElementException(
+                        " there are no more items to return in iteraton next()");
+
+            return a[random[i++]];
+
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException("Don't call remove() method in the iterator");
+        }
+    }
+
+}
