@@ -34,7 +34,7 @@ public class Deque<Item> implements Iterable<Item> {
 
     public boolean isEmpty()                 // is the deque empty?
     {
-        return N == 0;
+        return first == null;
     }
 
     public int size()                        // return the number of items on the deque
@@ -48,6 +48,7 @@ public class Deque<Item> implements Iterable<Item> {
             throw new IllegalArgumentException("addFirst has a null input.");
         }
         if (N == 0) {
+            first = new Node<Item>();       // 构造函数里已经初始化了，这里还要再new一下吗？其实我觉得不用。。
             first.item = item;
             first.front = null;
             first.next = null;
@@ -72,6 +73,7 @@ public class Deque<Item> implements Iterable<Item> {
             throw new IllegalArgumentException("addLast has a null input.");
         }
         if (N == 0) {
+            last = new Node<Item>();
             last.item = item;
             last.next = null;
             last.front = null;
@@ -93,6 +95,7 @@ public class Deque<Item> implements Iterable<Item> {
     {
         if (N == 0)
             throw new NoSuchElementException("The queue is empty.");
+
         Item item = first.item;
         if (N == 1) {
             first = null;
@@ -131,13 +134,10 @@ public class Deque<Item> implements Iterable<Item> {
     }
     //在类中添加一个方法 iterator() 并返回一个迭代器
 
-    private class FrontToEndIterator implements Iterator<Item>
-
-            //嵌套类private class
-    {
+    private class FrontToEndIterator implements Iterator<Item> {
         private Node<Item> current = first;
 
-        public boolean hasNext() {      // 顾名思义的话，应该是current.next != null才对呀
+        public boolean hasNext() {
             return current != null;
         }
 
@@ -145,7 +145,7 @@ public class Deque<Item> implements Iterable<Item> {
             throw new UnsupportedOperationException("Don't call remove() method in the iterator");
         }
 
-        public Item next() {   // next() 方法会保存当前元素的引用，将 current 变量指向链表中的下个结点并返回所保存的引用。
+        public Item next() {
             if (!hasNext())
                 throw new NoSuchElementException(
                         "there are no more items to return in iterator next()");
