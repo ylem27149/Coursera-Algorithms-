@@ -1,7 +1,8 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:修改了是否有相等的点的判断。
+ *  Description:增加输入输出数组创建副本的代码
+ *  在按斜率排序前，先进行按大小排序
  **************************************************************************** */
 
 import java.util.Arrays;
@@ -18,16 +19,17 @@ public class BruteCollinearPoints {
         lines = new LineSegment[2];
         n = 0;
 
+        Point[] copy = points.clone();
         // 根据Point定义的compareTo（点的y坐标大小顺序）排序数组，这样才能保证按从小到大顺序遍历出来的数组中的共线四点的首尾两点，是线段的端点
-        Arrays.sort(points);
+        Arrays.sort(copy);
 
         // iterate through all 4-tuples and check if the 4 points are collinear.
-        for (int i = 0; i < points.length; i++)
-            for (int h = i + 1; h < points.length; h++)
-                for (int m = h + 1; m < points.length; m++)
-                    for (int v = m + 1; v < points.length; v++) {
-                        if (isColliner(points[i], points[h], points[m], points[v]))
-                            lines[n++] = new LineSegment(points[i], points[v]);
+        for (int i = 0; i < copy.length; i++)
+            for (int h = i + 1; h < copy.length; h++)
+                for (int m = h + 1; m < copy.length; m++)
+                    for (int v = m + 1; v < copy.length; v++) {
+                        if (isColliner(copy[i], copy[h], copy[m], copy[v]))
+                            lines[n++] = new LineSegment(copy[i], copy[v]);
                         else continue;
                         if (n == lines.length) resize(2 * lines.length);
                     }
@@ -56,7 +58,7 @@ public class BruteCollinearPoints {
 
     public LineSegment[] segments()                // the line segments
     {
-        return lines.clone();       // 可以这样写副本吗原来。
+        return lines.clone();
 
     }
     // The method segments() should include each line segment containing 4 points exactly once.
