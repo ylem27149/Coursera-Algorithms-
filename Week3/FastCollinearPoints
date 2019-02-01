@@ -1,16 +1,19 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:先不考虑超过4个点的共线，排除子集有点麻烦。
- *  其实挺怀疑这玩意能不能达到要求，感觉完全不只N2lgN啊。光归并就有N2lgN了（N次调用归并）.写线段的时候，判断线的端点也用了归并排序。
+ *  Description:添加初始化和调整lines数组大小的代码
  **************************************************************************** */
+
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdDraw;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.Arrays;
 
 public class FastCollinearPoints {
     private int lineNumber; // the number of line segments
     private LineSegment[] lines;
-    // line segments containing 4 or more points。为什么编译器显示灰色？我不是在后面调用它了吗？
+    // line segments containing 4 or more points。
 
     public FastCollinearPoints(
             Point[] points)     // finds all line segments containing 4 or more points
@@ -21,6 +24,8 @@ public class FastCollinearPoints {
 
         if (points[0] == null)
             throw new IllegalArgumentException("there is null point in the array ");
+
+        lines = new LineSegment[2];
 
         // ith point is invoking point, the points before i are handled , and the points after i are those who may colliner to ith point
         // i is between 0 and points.length-4,when there are four or more points int the subarray,
@@ -35,7 +40,7 @@ public class FastCollinearPoints {
     private void fourColliner(Point[] slopeOrdered,
                               int start)   // 传入一个以start为参考点，按各点与start所成的梯度排序的点数组
     {
-        final Point START = slopeOrdered[start];        //写数组再写编号实在是太晕了，还是起个别名吧= =
+        final Point START = slopeOrdered[start];
         for (int i = start + 1; i < slopeOrdered.length - 3; i++) {
             Point o1 = slopeOrdered[i];
             Point o2 = slopeOrdered[i + 1];
@@ -55,6 +60,7 @@ public class FastCollinearPoints {
                 Point[] colliner = { START, o1, o2, o3 };
                 Arrays.sort(colliner);
                 lines[lineNumber++] = new LineSegment(colliner[0], colliner[3]);
+                if (lineNumber == lines.length) resize(2 * lines.length);
                 i = i + 2;
             }
         }
@@ -74,6 +80,43 @@ public class FastCollinearPoints {
     public LineSegment[] segments()                // the line segments
     {
         return lines;
+    }
+
+    private void resize(int max) {
+        LineSegment[] temp = new LineSegment[max];
+        for (int i = 0; i < lineNumber; i++)
+            temp[i] = lines[i];
+        lines = temp;
+    }
+
+    public static void main(String[] args) {
+
+        // read the n points from a file
+        In in = new In(args[0]);
+        int n = in.readInt();
+        Point[] points = new Point[n];
+        for (int i = 0; i < n; i++) {
+            int x = in.readInt();
+            int y = in.readInt();
+            points[i] = new Point(x, y);
+        }
+
+        // draw the points
+        StdDraw.enableDoubleBuffering();
+        StdDraw.setXscale(0, 32768);
+        StdDraw.setYscale(0, 32768);
+        for (Point p : points) {
+            p.draw();
+        }
+        StdDraw.show();
+
+        // print and draw the line segments
+        FastCollinearPoints collinear = new FastCollinearPoints(points);
+        for (LineSegment segment : collinear.segments()) {
+            StdOut.println(segment);
+            segment.draw();
+        }
+        StdDraw.show();
     }
 }
 
