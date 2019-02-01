@@ -1,7 +1,8 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description: 
+ *  Description: 修改了slopeTo代码，可读性更强。（不过就结果来看，不是这个问题。
+ *  对比了能正确运行出来的代码，实在看不出来问题在哪，gg，摔。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.StdDraw;
@@ -17,21 +18,12 @@ public class Point implements Comparable<Point> {
         // To avoid potential complications with integer overflow or floating-point precision,
         // you may assume that the constructor arguments x and y are each between 0 and 32,767.
 
-        coordinateTest(x);
-        coordinateTest(y);
         this.x = x;
         this.y = y;
     }
 
-    private void coordinateTest(int m) {
-        if (m < 0 || m > 32767)
-            throw new IllegalArgumentException(
-                    " the coordinate arguments x and y shouble be between 0 and 32,767.");
-    }
-
     public void draw()                               // draws this point
     {
-
         StdDraw.point(x, y);
     }
 
@@ -72,15 +64,16 @@ public class Point implements Comparable<Point> {
     {
         if (that == null)
             throw new IllegalArgumentException();
-        if (that.y == this.y) {
-            if (that.x != this.x)
-                return +0.0;            // the slope is defined to be +0.0 if the line segment connecting the b points is horizontal;
-            else
-                return Double.NEGATIVE_INFINITY;   // and Double.NEGATIVE_INFINITY if (x0, y0) and (x1, y1) are equal.
-        }
+
+        if (that.compareTo(this) == 0)
+            return Double.NEGATIVE_INFINITY;    // Double.NEGATIVE_INFINITY if (x0, y0) and (x1, y1) are equal.
+
+        else if (that.y == this.y)
+            return +0.0;            // the slope is defined to be +0.0 if the line segment connecting the b points is horizontal;
+
         else if (that.x == this.x)
             return Double.POSITIVE_INFINITY;        // Double.POSITIVE_INFINITY if the line segment is vertical;
-        else return (double) (that.y - this.y) / (double) (that.x - this.x);
+        else return (that.y - this.y) / (double) (that.x - this.x);
 
     }
 
@@ -110,11 +103,13 @@ public class Point implements Comparable<Point> {
             return 0;
         }
     }
+
     // The complicating issue is that the comparator needed to compare the slopes that two points q and r make with a third point p,
     // which changes from sort to sort. To do this, create a private nested (non-static) class SlopeOrder
     // that implements the Comparator<Point> interface. This class has a single method compare(q1, q2)
     // that compares the slopes that q1 and q2 make with the invoking object p.
     // the slopeOrder() method should create an instance of this nested class and return it.
+    
 }
 
 
