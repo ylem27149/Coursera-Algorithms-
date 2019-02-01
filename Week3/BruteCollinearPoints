@@ -1,7 +1,7 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description:修改了是否有相等的点的判断。
  **************************************************************************** */
 
 import java.util.Arrays;
@@ -14,20 +14,22 @@ public class BruteCollinearPoints {
     {
         if (points == null)
             throw new IllegalArgumentException("the argument to the constructor is null");
+
         lines = new LineSegment[2];
         n = 0;
+
         // 根据Point定义的compareTo（点的y坐标大小顺序）排序数组，这样才能保证按从小到大顺序遍历出来的数组中的共线四点的首尾两点，是线段的端点
         Arrays.sort(points);
+
         // iterate through all 4-tuples and check if the 4 points are collinear.
         for (int i = 0; i < points.length; i++)
             for (int h = i + 1; h < points.length; h++)
                 for (int m = h + 1; m < points.length; m++)
                     for (int v = m + 1; v < points.length; v++) {
                         if (isColliner(points[i], points[h], points[m], points[v]))
-                            lines[n++] = new LineSegment(points[i],
-                                                         points[v]);   // form a line segment only if the index of points are in ascending order
-                        if (n == lines.length) resize(2
-                                                              * lines.length);       //这里，这两个if的判断，n是不是要+1再和line.length比大小。我感觉应该这样就行，但还是有点虚
+                            lines[n++] = new LineSegment(points[i], points[v]);
+                        else continue;
+                        if (n == lines.length) resize(2 * lines.length);
                     }
     }
 
@@ -38,7 +40,8 @@ public class BruteCollinearPoints {
 
         if (o1 == null || o2 == null || o3 == null || o4 == null)
             throw new IllegalArgumentException("there is point in the array is null");
-        if (o1.compareTo(o2) == 0 || o2.compareTo(o3) == 0 || o1.compareTo(o3) == 0)
+        if (o1.compareTo(o2) == 0 || o2.compareTo(o3) == 0
+                || o3.compareTo(o4) == 0)        // 输入的四点是已经按照相对大小排过序了，所以只要比相邻的就行了：只要有相等的点，肯定是相邻的。
             throw new IllegalArgumentException(
                     "the array contains a repeated point");
         return (o1.slopeTo(o2) == o2.slopeTo(o3) && o2.slopeTo(o3) == o3.slopeTo(o4));
@@ -53,7 +56,7 @@ public class BruteCollinearPoints {
 
     public LineSegment[] segments()                // the line segments
     {
-        return lines;
+        return lines.clone();       // 可以这样写副本吗原来。
 
     }
     // The method segments() should include each line segment containing 4 points exactly once.
@@ -68,6 +71,7 @@ public class BruteCollinearPoints {
             temp[i] = lines[i];
         lines = temp;
     }
+
 
 }
 
