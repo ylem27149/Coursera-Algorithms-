@@ -1,0 +1,210 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:
+ *  immutable。好像能通过不给相关 method API来实现？
+ *  写了一个全局变量来存储目标方阵，避免多次计算  dimension() * i + j + 1
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.Bag;
+import edu.princeton.cs.algs4.StdRandom;
+
+public class Board {
+
+    private final int[][] board;     // the initial board
+    private final int[][] goal;     // the goal board
+    private final int n;        // the dimension of the board
+    // Corner cases.You may assume that the constructor receives an n-by-n array containing the n2 integers
+    // between 0 and n2 − 1, where 0 represents the blank square.
+
+    public Board(
+            int[][] blocks)           // construct a board from an n-by-n array of blocks， (where blocks[i][j] = block in row i, column j
+    {
+        board = blocks;
+        n = board.length;           // length 可以获取数组长度。对于二维数组a[M][N]，a.length = M；a[0].length = N;
+        goal = new int[n][n];
+        for (int i = 0; i < dimension(); i++)
+            for (int j = 0; j < dimension(); j++) {
+                if (i + j != 2 * (dimension() - 1))
+                    goal[i][j] = dimension() * i + j + 1;
+                else goal[i][j] = 0;
+            }
+
+
+    }
+
+    public int dimension()                 // board dimension n
+    {
+        return n;
+    }
+
+    public int hamming()                   // number of blocks out of place
+    {
+        int ham = 0;
+        for (int i = 0; i < dimension(); i++)
+            for (int j = 0; j < dimension(); j++)
+                if (i + j != 2 * (dimension() - 1) && board[i][j] != goal[i][j])
+                    ham++;
+
+        return ham;
+
+
+    }
+
+    public int manhattan()                 // sum of Manhattan distances between blocks and goal
+    {
+        int distance = 0;
+        for (int i = 0; i < dimension(); i++)
+            for (int j = 0; j < dimension(); j++)
+                if (i + j != 2 * (dimension() - 1) && board[i][j] != goal[i][j])
+                    distance = distance + manhattanDistance(i, j);
+
+        return distance;
+
+    }
+
+    private int manhattanDistance(int x, int y) {
+
+        // compute the manhattan distance of board[x][y]
+
+        for (int i = 0; i < dimension(); i++)
+            for (int j = 0; j < dimension(); j++) {
+                if (goal[i][j] == board[x][y])
+                    return Math.abs(i + j - x - y);
+            }
+
+    }
+
+    public boolean isGoal()                // is this board the goal board?
+    {
+        return hamming() == 0;
+    }
+
+    public Board twin()
+
+    // a board that is obtained by exchanging any pair of blocks (the blank square is not a block)
+    //  You will use it to determine whether a puzzle is solvable: exactly one of a board and its twin are solvable
+
+    {
+        int[][] copy = board.clone();        // Board是不可变数据类型。要改值的话得新建一个数组先。
+
+        //产生两组不同的，被交换的坐标，对应的元素不能为0
+
+        int i = StdRandom.uniform(0, dimension());
+        int j = StdRandom.uniform(0, dimension());
+        while (copy[i][j] == 0) {
+            i = StdRandom.uniform(0, dimension());
+            j = StdRandom.uniform(0, dimension());
+        }
+        int p = StdRandom.uniform(0, dimension());
+        int q = StdRandom.uniform(0, dimension());
+        while (copy[p][q] == 0 || copy[p][q] == copy[i][j]) {
+            p = StdRandom.uniform(0, dimension());
+            q = StdRandom.uniform(0, dimension());
+        }
+        exchange(copy, i, j, p, q);     // exchange copy[i][j] between copy[p][q]
+        Board twin = new Board(copy);
+        return twin;
+
+    }
+
+    private void exchange(int[][] a, int i, int j, int p, int q) {
+
+        // exchange a[i][j] between a[p][q]
+
+        int number = a[i][j];
+        a[i][j] = a[p][q];
+        a[p][q] = number;
+    }
+
+    public boolean equals(Object y)        // does this board equal y?
+    {
+        // 这份API完全碰不到内部的数据啊。。要怎么对比呢……toString?
+
+        if (y == this) return true;     // emmm this 是指当前的Board变量吧？
+        if (y == null) return false;
+        if (y.getClass() != this.getClass()) return false;
+        Board that = (Board) y;
+        return this.toString().equals(that.toString());
+    }
+
+    public Iterable<Board> neighbors()     // all neighboring boards  是0元素的所有相邻交换可能。
+
+    //咦。这个感觉没办法用统一的next来写吧。好像得先计算出来然后存储。。存储到一个能迭代输出的数据结构里，就行了吧？
+    // 看符号表的keys实现，返回一个集合类数据类型，是Iterable<>。调用.iterator,是iterator<>数据类型
+    // checklist 说用stack或者queue。但是我感觉bag更好哇。
+
+    {
+        int x, y;   // board[x][y] = 0
+
+        for (int i = 0; i < dimension(); i++)
+            for (int j = 0; j < dimension(); j++)
+                if (board[i][j] == 0) {
+                    x = i;
+                    y = j;
+                    break;
+                }
+        Bag<Board> neighborBoard = new Bag<Board>();
+        neighborProcess(neighborBoard, x, y);
+        return neighborBoard;
+
+    }
+
+    private void neighborProcess(Bag<Board> neighborBoard, int x, int y) {
+
+        if (x - 1 >= 0) {
+            int[][] copy = board.clone();
+            exchange(copy, x, y, x - 1, y);
+            Board neighor = new Board(copy);
+            neighborBoard.add(neighor);
+        }
+        if (x + 1 < dimension()) {
+            int[][] copy = board.clone();
+            exchange(copy, x, y, x + 1, y);
+            Board neighor = new Board(copy);
+            neighborBoard.add(neighor);
+
+        }
+        if (y - 1 >= 0) {
+            int[][] copy = board.clone();
+            exchange(copy, x, y, x, y - 1);
+            Board neighor = new Board(copy);
+            neighborBoard.add(neighor);
+        }
+        if (y + 1 < dimension()) {
+            int[][] copy = board.clone();
+            exchange(copy, x, y, x, y + 1);
+            Board neighor = new Board(copy);
+            neighborBoard.add(neighor);
+        }
+    }
+
+    public String toString()               // string representation of this board (in the output format specified below)
+    //应该是这种格式？
+    // checklist里用了StringBuilder 数据类型，我没见过这个，先copy在下面
+    // public String toString() {
+    //     StringBuilder s = new StringBuilder();
+    //     s.append(n + "\n");
+    //     for (int i = 0; i < n; i++) {
+    //         for (int j = 0; j < n; j++) {
+    //             s.append(String.format("%2d ", tiles[i][j]));
+    //         }
+    //         s.append("\n");
+    //     }
+    //     return s.toString();
+    // }
+    {
+        String s = null;
+        for (int i = 0; i < dimension(); i++) {
+            s = s + "\n";
+            for (int j = 0; j < dimension(); j++)
+                s = s + board[i][j] + " ";
+        }
+        return dimension() + s;
+    }
+
+    public static void main(String[] args) // unit tests (not graded)
+    {
+
+    }
+}
