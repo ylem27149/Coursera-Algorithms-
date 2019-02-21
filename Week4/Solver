@@ -1,0 +1,94 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:卡在如何实现MinPQ的优先函数上了，等回头再写了，再研究一下问题描述和checklist
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.MinPQ;
+import edu.princeton.cs.algs4.Stack;
+import edu.princeton.cs.algs4.StdOut;
+
+public class Solver {
+    // immutable data type Solver
+    // To implement the A* algorithm, you must use MinPQ from algs4.jar for the priority queue(s).
+
+    private final SearchNode first;   // the search node contains initail board
+    private int minMove;
+    private Stack<Board> solution;
+
+    public Solver(
+            Board initial)           // find a solution to the initial board (using the A* algorithm)
+    {
+        if (initial == null) throw new IllegalArgumentException("initial board is null");
+        // Corner cases.  The constructor should throw a java.lang.IllegalArgumentException if passed a null argument.
+        first = new SearchNode();
+        first.board = initial;
+        first.moves = 0;
+        first.predecessor = null;
+
+        MinPQ<SearchNode> pq = new MinPQ<SearchNode>();       // 看提纲的意思，是压入SearchNode，但是优先函数要怎么定义哇？
+        pq.insert(first);
+        minMove++;
+        while (pq.delMin().board.manhattan() == 0) {
+            for (Board neighbor : first.board.neighbors())
+                SearchNode                  // 不行啊变量名怎么弄。。
+
+        }
+    }
+
+    private class SearchNode {
+
+        // implements Comparable<SearchNode> 一般都是放到最开头的啊。。compareTo是放在那里面。这个究竟要怎么实现
+
+        Board board;
+        int moves;
+        SearchNode predecessor;
+    }
+
+    public boolean isSolvable
+            ()            // is the initial board solvable?
+
+    //, the current API requires you to detect infeasiblity in Solver by using two synchronized A* searches (e.g., using two priority queues).
+    {
+        Board twinBoard = first.board.twin();
+    }
+
+    public int moves()                     // min number of moves to solve initial board; -1 if unsolvable
+    {
+
+    }
+
+    public Iterable<Board> solution()      // sequence of boards in a shortest solution; null if unsolvable
+    {
+
+
+    }
+
+    public static void main(String[] args) {
+        // Use the following test client to read a puzzle from a file (specified as a command-line argument)
+        // and print the solution to standard output.
+
+        // create initial board from file
+        In in = new In(args[0]);
+        int n = in.readInt();
+        int[][] blocks = new int[n][n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                blocks[i][j] = in.readInt();
+        Board initial = new Board(blocks);
+
+        // solve the puzzle
+        Solver solver = new Solver(initial);
+
+        // print solution to standard output
+        if (!solver.isSolvable())
+            StdOut.println("No solution possible");
+        else {
+            StdOut.println("Minimum number of moves = " + solver.moves());
+            for (Board board : solver.solution())
+                StdOut.println(board);      // print 是输出了toString的类型吗。
+        }
+    }
+
+}
