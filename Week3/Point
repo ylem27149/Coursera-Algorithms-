@@ -1,46 +1,77 @@
-/* *****************************************************************************
+/******************************************************************************
  *  Name:
- *  Date:
- *  Description: 修改了slopeTo代码，可读性更强。（不过就结果来看，不是这个问题。
- *  对比了能正确运行出来的代码，实在看不出来问题在哪，gg，摔。
- **************************************************************************** */
+ *  Date: 2019.4.28
+ * Description:
+ *
+ ******************************************************************************/
 
 import edu.princeton.cs.algs4.StdDraw;
+import edu.princeton.cs.algs4.StdIn;
+import edu.princeton.cs.algs4.StdOut;
 
+import java.util.ArrayList;
 import java.util.Comparator;
-// Create an immutable data type Point that represents a point in the plane by implementing the following API:
 
 public class Point implements Comparable<Point> {
-    private final int x, y;     // x,y-coordinate of this point
 
-    public Point(int x, int y)                         // constructs the point (x, y)
-    {
-        // To avoid potential complications with integer overflow or floating-point precision,
-        // you may assume that the constructor arguments x and y are each between 0 and 32,767.
+    private final int x;     // x-coordinate of this point
+    private final int y;     // y-coordinate of this point
+
+    /**
+     * Initializes a new point.
+     *
+     * @param x the <em>x</em>-coordinate of the point
+     * @param y the <em>y</em>-coordinate of the point
+     */
+    public Point(int x, int y) {
+        /* DO NOT MODIFY */
+
 
         this.x = x;
         this.y = y;
+
+        // To avoid potential complications with integer overflow or floating-point precision,
+        // you may assume that the constructor arguments x and y are each between 0 and 32,767.
     }
 
-    public void draw()                               // draws this point
-    {
+
+    /**
+     * Draws this point to standard draw.
+     */
+    public void draw() {
+        /* DO NOT MODIFY */
         StdDraw.point(x, y);
     }
 
-    public void drawTo(
-            Point that)                   // draws the line segment from this point to that point
-    {
-
+    /**
+     * Draws the line segment between this point and the specified point to standard draw.
+     *
+     * @param that the other point
+     */
+    public void drawTo(Point that) {
+        /* DO NOT MODIFY */
         StdDraw.line(this.x, this.y, that.x, that.y);
     }
 
-    public String toString()                           // string representation
-    {
-        return "(" + x + ", " + y + ")";
+    /**
+     * Returns the slope between this point and the specified point. Formally, if the two points are
+     * (x0, y0) and (x1, y1), then the slope is (y1 - y0) / (x1 - x0). For completeness, the slope
+     * is defined to be +0.0 if the line segment connecting the two points is horizontal;
+     * Double.POSITIVE_INFINITY if the line segment is vertical; and Double.NEGATIVE_INFINITY if
+     * (x0, y0) and (x1, y1) are equal.
+     *
+     * @param that the other point
+     * @return the slope between this point and the specified point
+     */
+    public double slopeTo(Point that) {
+        if (this.y == that.y && this.x != that.x) return +0.0;
+        if (this.x == that.x && this.y != that.y) return Double.POSITIVE_INFINITY;
+        if (this.y == that.y && this.x == that.x) return Double.NEGATIVE_INFINITY;
+        return (this.y - that.y) / (double) (this.x - that.x);
     }
 
     /**
-     * Compares b points by y-coordinate, breaking ties by x-coordinate. Formally, the invoking
+     * Compares two points by y-coordinate, breaking ties by x-coordinate. Formally, the invoking
      * point (x0, y0) is less than the argument point (x1, y1) if and only if either y0 < y1 or if
      * y0 = y1 and x0 < x1.
      *
@@ -49,67 +80,64 @@ public class Point implements Comparable<Point> {
      * y1); a negative integer if this point is less than the argument point; and a positive integer
      * if this point is greater than the argument point
      */
-    public int compareTo(
-            Point that)     // compare b points by y-coordinates, breaking ties by x-coordinates
-    {
-        if (this.y < that.y) return -1;
-        else if (this.y == that.y) {
-            if (this.x == that.x) return 0;
-            if (this.x < that.x) return -1;
-        }
-        return 1;
-    }
-
-    public double slopeTo(Point that)       // the slope between this point and that point
-    {
-        if (that == null)
-            throw new IllegalArgumentException();
-
-        if (that.compareTo(this) == 0)
-            return Double.NEGATIVE_INFINITY;    // Double.NEGATIVE_INFINITY if (x0, y0) and (x1, y1) are equal.
-
-        else if (that.y == this.y)
-            return +0.0;            // the slope is defined to be +0.0 if the line segment connecting the b points is horizontal;
-
-        else if (that.x == this.x)
-            return Double.POSITIVE_INFINITY;        // Double.POSITIVE_INFINITY if the line segment is vertical;
-        else return (that.y - this.y) / (double) (that.x - this.x);
-
+    public int compareTo(Point that) {
+        if (y == that.y && x == that.x) return 0;
+        if (y < that.y || (y == that.y && x < that.x))
+            return -1;
+        else return 1;
     }
 
     /**
-     * Compares b points by the slope they make with this point. The slope is defined as in the
-     * slopeTo() method. The slopeOrder() method should return a comparator that compares its b
-     * argument points by the slopes they make with the invoking point (x0, y0). Formally, the point
-     * (x1, y1) is less than the point (x2, y2) if and only if the slope (y1 − y0) / (x1 − x0) is
-     * less than the slope (y2 − y0) / (x2 − x0). Treat horizontal, vertical, and degenerate line
-     * segments as in the slopeTo() method.
+     * Compares two points by the slope they make with this point. The slope is defined as in the
+     * slopeTo() method.
      *
      * @return the Comparator that defines this ordering on points
      */
-    public Comparator<Point> slopeOrder()              // compare b points by slopes they make with this point
-    {
+    public Comparator<Point> slopeOrder() {
         return new SlopeOrder();
     }
 
     private class SlopeOrder implements Comparator<Point> {
-        public int compare(Point o1, Point o2) {
-            if (o1 == null || o2 == null)
-                throw new IllegalArgumentException();
-            if (slopeTo(o1) > slopeTo(o2))
-                return 1;
-            if (slopeTo(o1) < slopeTo(o2))
-                return -1;
-            return 0;
+        public int compare(Point a, Point b) {
+            double slope1 = slopeTo(a);
+            double slope2 = slopeTo(b);
+            if (slope1 > slope2) return 1;
+            if (slope1 == slope2) return 0;
+            else return -1;
+
         }
     }
 
-    // The complicating issue is that the comparator needed to compare the slopes that two points q and r make with a third point p,
-    // which changes from sort to sort. To do this, create a private nested (non-static) class SlopeOrder
-    // that implements the Comparator<Point> interface. This class has a single method compare(q1, q2)
-    // that compares the slopes that q1 and q2 make with the invoking object p.
-    // the slopeOrder() method should create an instance of this nested class and return it.
-    
+    /**
+     * Returns a string representation of this point. This method is provide for debugging; your
+     * program should not rely on the format of the string representation.
+     *
+     * @return a string representation of this point
+     */
+    public String toString() {
+        /* DO NOT MODIFY */
+        return "(" + x + ", " + y + ")";
+    }
+
+    /**
+     * Unit tests the Point data type.
+     */
+    public static void main(String[] args) {
+        Point a = new Point(StdIn.readInt(), StdIn.readInt());
+        Point b = new Point(StdIn.readInt(), StdIn.readInt());
+        StdOut.println("the slope between a and a is " + a.slopeTo(a));
+        StdOut.println("the slope between a and b is " + a.slopeTo(b));
+        Point c = new Point(StdIn.readInt(), StdIn.readInt());
+        Point d = new Point(StdIn.readInt(), StdIn.readInt());
+        StdOut.println("the slope between a and c is " + a.slopeTo(c));
+        StdOut.println("the slope between a and d is " + a.slopeTo(d));
+        ArrayList<Point> points = new ArrayList<Point>();
+        points.add(a);
+        points.add(b);
+        points.add(c);
+        points.add(d);
+        points.sort(a.slopeOrder());
+        StdOut.println(points);
+
+    }
 }
-
-
