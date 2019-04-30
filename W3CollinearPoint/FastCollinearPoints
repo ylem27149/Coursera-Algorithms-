@@ -1,99 +1,130 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:增加输入输出数组创建副本的代码
+ *  Description:
+ *  Performance requirement.
+ *  The order of growth of the running time of your program should be n2 log n in the worst case
+ *  and it should use space proportional to n plus the number of line segments returned.
+ *  FastCollinearPoints should work properly even if the input has 5 or more collinear points.
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class FastCollinearPoints {
-    private int lineNumber; // the number of line segments
-    private LineSegment[] lines;
-    // line segments containing 4 or more points。
+    private int numOfSeg;       // 有四个点的线段条数
+    private ArrayList<LineSegment> lineSegments;     // 有四个点的线段集合
+
 
     public FastCollinearPoints(
             Point[] points)     // finds all line segments containing 4 or more points
     {
-        // Corner cases
-        if (points == null)
-            throw new IllegalArgumentException("the argument to the constructor is null");
+        numOfSeg = 0;
+        lineSegments = new ArrayList<LineSegment>();
+        //已经在class开头声明过变量类型，这里左边就不用写类型了
 
-        if (points[0] == null)
-            throw new IllegalArgumentException("there is null point in the array ");
+        cornerTest(points);       // 输入的边界测试
+        Point[] sortedPoints = points.clone();
+        Arrays.sort(sortedPoints);        // sortedPoints按点的大小从小到大排序
 
-        lines = new LineSegment[2];
 
-        Point[] pointscopy = points.clone();
-        Arrays.sort(pointscopy);
+        for (int i = 0; i < sortedPoints.length; i++)
+            colliearFinder(sortedPoints, sortedPoints[i]);
+        // 每个点从小到大，一个一个作为计算斜率排序的固定端点，寻找四点共线的所有可能
+        // 每次排序时，并不去除已经排过的点。所以可以直接扫到结尾（应该会有一点冗余，懒得细想了
+        // 因为没有排除已经用过的端点，所以不会有线段子集出现。
+        // 只有当固定端点为一组共线点中的最小点时，这个线段才会输出，这样就保证了不会重复输出同一条线。
+        // 不过这样感觉性能会受点影响，因为计算了所有共线点的全排列。
+        // 因为每次都会用按点大小排序的母本进行重新排序，如果Arrays.sort是稳定的话（网上说当参数是对象时是稳定的），输出时，线段最大点肯定 是最后一个等斜率点。
 
-        // ith point is invoking point, the points before i are handled , and the points after i are those who may colliner to ith point
-        // i is between 0 and points.length-4,when there are four or more points int the subarray,
-        for (int i = 0; i < pointscopy.length - 3; i++) {
-            // Arrays.sort(a, lo, hi) sorts the subarray from a[lo] to a[hi-1]
-            // use a Comparator as the fourth argument to sort according to the slope that each point make with ith point in the array.
-            Arrays.sort(pointscopy, i + 1, pointscopy.length, pointscopy[i].slopeOrder());
-            fourColliner(pointscopy, i);
-        }
     }
 
-    private void fourColliner(Point[] slopeOrdered,
-                              int start)   // 传入一个以start为参考点，按各点与start所成的梯度排序的点数组
-    {
-        final Point START = slopeOrdered[start];
-        for (int i = start + 1; i < slopeOrdered.length - 3; i++) {
-            Point o1 = slopeOrdered[i];
-            Point o2 = slopeOrdered[i + 1];
-            Point o3 = slopeOrdered[i + 2];
+    private void colliearFinder(Point[] points, Point origin) {
+        // 以Origin点为斜率计算的端点，将数组排序，找出其中所有共线点
 
-            // test if there are repeated points, three points as a group.
-            // For the ordered array, the point same as the start will be the first group, which has a Double.NEGATIVE_INFINITY;
-            // So if o1 != start, the rest points can't be equal to start
-            if (START.compareTo(o1) == 0 || o1.compareTo(o2) == 0 || o2.compareTo(o3) == 0
-                    || o1.compareTo(o3) == 0)
-                throw new IllegalArgumentException("the array contains a repeated point");
+        Point[] slopeSoredPoints = points.clone();
+        Arrays.sort(slopeSoredPoints, origin.slopeOrder());     // 按斜率排序数组的复印件
 
-            // find three points which have the same slope with start point
-            // 如果考虑有超过四个点，这部分也要变
-            if (START.slopeTo(o1) == START.slopeTo(o2) && START.slopeTo(o2) == START.slopeTo(o3)) {
+        double slope;
+        int last = 1;
+        int collinearNum = 2;
+        while (last < slopeSoredPoints.length - 1) {
 
-                Point[] colliner = { START, o1, o2, o3 };
-                Arrays.sort(colliner);
-                lines[lineNumber++] = new LineSegment(colliner[0], colliner[3]);
-                if (lineNumber == lines.length) resize(2 * lines.length);
-                i = i + 2;
+            // 初始化斜率，寻找共线点
+            slope = origin.slopeTo(slopeSoredPoints[last]);
+            collinearNum = 2;
+            last++;
+
+
+            while (slope == origin.slopeTo(slopeSoredPoints[last])) {
+                collinearNum++;
+                last++;
             }
+            // 退出循环的时候，last所指向的，是第一个不同斜率的点
+
+
+            if (collinearNum >= 4)       // 判断是否为某类的子类,如果是子类，就无事发生，如果不是子类就加入lineSegment。
+            {
+                Point[] copy = new Point[collinearNum];
+                copy[0] = origin;
+                for (int i = 1; i < collinearNum; i++)
+                    copy[i] = slopeSoredPoints[last - collinearNum
+                            + i];
+                // clone 不接受参数，不知道数组有没有内建的复制一部分的方法，就干脆自己写了，也不麻烦
+
+                Arrays.sort(copy);
+                // Math.min 只接受原始类型的参数，所以就排序来间接实现比大小。我记得书上也都是这么实现的。
+
+                if (copy[0].compareTo(origin) == 0) {
+                    lineSegments.add(new LineSegment(origin, slopeSoredPoints[last - 1]));
+                    numOfSeg++;
+                }
+            }
+
         }
+
 
     }
 
-    // The method segments() should include each maximal line segment containing 4 (or more) points exactly once.
-    // For example, if 5 points appear on a line segment in the order p→q→r→s→t,
-    // then do not include the subsegments p→s or q→t.
 
+    // Corner cases. Throw a java.lang.IllegalArgumentException if the argument to the constructor is null,
+    // if any point in the array is null, or if the argument to the constructor contains a repeated point.
+    private void cornerTest(Point[] points) {
+        // 从BruteCollinearPoints抄的
+        if (points == null)
+            throw new IllegalArgumentException();
+        int N = points.length;
+        if (N > 1) {
+            for (int i = 0; i < N - 1; i++)
+                if (points[i] == null || points[i].compareTo(points[i + 1]) == 0)
+                    throw new IllegalArgumentException();
+
+            if (points[N - 1] == null)
+                throw new IllegalArgumentException();
+        }
+    }
+    // How do I sort a subarray in Java? Arrays.sort(a, lo, hi) sorts the subarray from a[lo] to a[hi-1] according to the natural order of a[].
+    // You can use a Comparator as the fourth argument to sort according to an alternate order.
 
     public int numberOfSegments()        // the number of line segments
     {
-        return lineNumber;
+        return numOfSeg;
     }
 
     public LineSegment[] segments()                // the line segments
     {
-        return lines.clone();
-    }
-
-    private void resize(int max) {
-        LineSegment[] temp = new LineSegment[max];
-        for (int i = 0; i < lineNumber; i++)
-            temp[i] = lines[i];
-        lines = temp;
+        LineSegment[] lines = new LineSegment[numOfSeg];
+        for (int i = 0; i < numOfSeg; i++)
+            lines[i] = lineSegments.get(i);
+        return lines;
+        // 话说，局部变量的话，能成功把引用返回出去吗，就是，引用指向的对象会不会在函数结束就被清除了？还是说，引用变量会消失，但是这个对象还有指针留下，所以不会被垃圾回收？
     }
 
     public static void main(String[] args) {
-
         // read the n points from a file
         In in = new In(args[0]);
         int n = in.readInt();
@@ -114,12 +145,14 @@ public class FastCollinearPoints {
         StdDraw.show();
 
         // print and draw the line segments
-        FastCollinearPoints collinear = new FastCollinearPoints(points);
+        BruteCollinearPoints collinear = new BruteCollinearPoints(points);
         for (LineSegment segment : collinear.segments()) {
             StdOut.println(segment);
             segment.draw();
         }
+
         StdDraw.show();
+
     }
 }
 
