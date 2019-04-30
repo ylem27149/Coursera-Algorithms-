@@ -1,0 +1,116 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:Performance requirement. The order of growth of the running time of your program should be n4 in the worst case
+ *  and it should use space proportional to n plus the number of line segments returned.
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdDraw;
+import edu.princeton.cs.algs4.StdOut;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class BruteCollinearPoints {
+    private int numOfSeg;       // 有四个点的线段条数
+    private LineSegment[] lineSegments;     // 有四个点的线段集合
+
+    public BruteCollinearPoints(Point[] points)    // finds all line segments containing 4 points
+    {
+        numOfSeg = 0;
+        ArrayList<LineSegment> linesArrayList = new ArrayList<LineSegment>();
+        // 后面要一个一个加入线段，用可以自动调整大小的arraylisr比较方便
+        Point[] pointcopy = points.clone();
+        // 直接写 Point[] pointcopy = points 似乎并不能创建一份拷贝，只是多创建了一个指针。
+        Arrays.sort(
+                pointcopy);        //我不太会用这些内建的排序来着。都有哪些？head first java上的collection.sort等和这个有什么区别？
+        // 把点进行排序，使用的是Point类的compareTo，即按照y坐标排序
+        cornerTest(pointcopy);
+        // 输入的边界测试
+        double slope1 = 0.0;
+
+        // 检测 first,second,third,last四个点是否共线
+        for (int first = 0; first < pointcopy.length - 3; first++)
+            for (int second = first + 1; second < pointcopy.length - 2; second++) {
+                slope1 = pointcopy[first].slopeTo(pointcopy[second]);
+                for (int third = second + 1; third < pointcopy.length - 1; third++) {
+                    if (slope1 == pointcopy[first].slopeTo(pointcopy[third])) {
+                        for (int last = third + 1; last < pointcopy.length; last++)
+                            if (slope1 == pointcopy[first].slopeTo(pointcopy[last])) {
+                                linesArrayList
+                                        .add(new LineSegment(pointcopy[first], pointcopy[last]));
+                                numOfSeg++;
+                            }
+                    }
+                }
+            }
+
+        lineSegments = new LineSegment[numOfSeg];
+        for (int i = 0; i < numOfSeg; i++)
+            lineSegments[i] = linesArrayList.get(i);
+        // 把线段从局部的Arraylist里，复制到实例变量的数组里。
+        // 有没有更好的写法啊，感觉这么写有点傻
+
+    }
+
+    // Corner cases. Throw a java.lang.IllegalArgumentException if the argument to the constructor is null,
+    // if any point in the array is null, or if the argument to the constructor contains a repeated point.
+
+    private void cornerTest(Point[] points) {
+        if (points == null)
+            throw new IllegalArgumentException();
+        int N = points.length;
+        if (N > 1) {
+            for (int i = 0; i < N - 1; i++)
+                if (points[i] == null || points[i].compareTo(points[i + 1]) == 0)
+                    // 第二个式子，不能直接用 == 比两个对象的值是否相等，equals也没有重载，所以只能用compareTo是否为0来判断
+                    throw new IllegalArgumentException();
+
+            if (points[N - 1] == null)
+                throw new IllegalArgumentException();
+        }
+    }
+
+
+    public int numberOfSegments()        // the number of line segments
+    {
+        return numOfSeg;
+    }
+
+    public LineSegment[] segments()                // the line segments
+    {
+        return lineSegments.clone();
+    }
+
+    public static void main(String[] args) {
+        // read the n points from a file
+        In in = new In(args[0]);
+        int n = in.readInt();
+        Point[] points = new Point[n];
+        for (int i = 0; i < n; i++) {
+            int x = in.readInt();
+            int y = in.readInt();
+            points[i] = new Point(x, y);
+        }
+
+        // draw the points
+        StdDraw.enableDoubleBuffering();
+        StdDraw.setXscale(0, 32768);
+        StdDraw.setYscale(0, 32768);
+        for (Point p : points) {
+            p.draw();
+        }
+        StdDraw.show();
+
+        // print and draw the line segments
+        BruteCollinearPoints collinear = new BruteCollinearPoints(points);
+        for (LineSegment segment : collinear.segments()) {
+            StdOut.println(segment);
+            segment.draw();
+        }
+
+        StdDraw.show();
+
+    }
+}
