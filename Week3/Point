@@ -1,15 +1,15 @@
 /******************************************************************************
  *  Name:
  *  Date: 2019.4.28
- * Description:
+ *  Description: 去掉了Main中对Arraylist的调用（为什么第一遍会想着调用Arraylist
  *
  ******************************************************************************/
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdDraw;
-import edu.princeton.cs.algs4.StdIn;
 import edu.princeton.cs.algs4.StdOut;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 
 public class Point implements Comparable<Point> {
@@ -123,21 +123,20 @@ public class Point implements Comparable<Point> {
      * Unit tests the Point data type.
      */
     public static void main(String[] args) {
-        Point a = new Point(StdIn.readInt(), StdIn.readInt());
-        Point b = new Point(StdIn.readInt(), StdIn.readInt());
-        StdOut.println("the slope between a and a is " + a.slopeTo(a));
-        StdOut.println("the slope between a and b is " + a.slopeTo(b));
-        Point c = new Point(StdIn.readInt(), StdIn.readInt());
-        Point d = new Point(StdIn.readInt(), StdIn.readInt());
-        StdOut.println("the slope between a and c is " + a.slopeTo(c));
-        StdOut.println("the slope between a and d is " + a.slopeTo(d));
-        ArrayList<Point> points = new ArrayList<Point>();
-        points.add(a);
-        points.add(b);
-        points.add(c);
-        points.add(d);
-        points.sort(a.slopeOrder());
-        StdOut.println(points);
+        In in = new In(args[0]);
+        int n = in.readInt();
+        StdOut.println(n);
+        Point[] points = new Point[n];
+        for (int i = 0; i < n; i++) {
+            int x = in.readInt();
+            int y = in.readInt();
+            points[i] = new Point(x, y);
+        }
 
+        Arrays.sort(points, points[0].slopeOrder());
+
+        for (Point p : points) {
+            StdOut.println(p);
+        }
     }
 }
