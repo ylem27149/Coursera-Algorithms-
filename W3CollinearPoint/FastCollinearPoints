@@ -1,30 +1,29 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
- *  Performance requirement.
- *  The order of growth of the running time of your program should be n2 log n in the worst case
- *  and it should use space proportional to n plus the number of line segments returned.
- *  FastCollinearPoints should work properly even if the input has 5 or more collinear points.
+ *  Description:去掉了ArrayList的调用。
+ *  修改了segment()，避免返回的线段数组中会有Null
+ *  在colliearFinder 的  while (slope == origin.slopeTo(slopeSoredPoints[last])) 循环，增加了对last的边界检测，以免最后一个元素符合条件时，last继续递增使得超出数组界限
+ *  发现这种边界超出界限的bug，写几个printf显示关键参数变化轨迹，再手算模拟以下就很好debug了（其实就是C编译器的单步运行看参数变化，我猜这个应该内建也有这种功能？不过没找到，就先这样吧）
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class FastCollinearPoints {
     private int numOfSeg;       // 有四个点的线段条数
-    private ArrayList<LineSegment> lineSegments;     // 有四个点的线段集合
+    private LineSegment[] lines;    // 有四个点的线段集合
 
 
     public FastCollinearPoints(
             Point[] points)     // finds all line segments containing 4 or more points
     {
         numOfSeg = 0;
-        lineSegments = new ArrayList<LineSegment>();
+        lines = new LineSegment[2];
+
         //已经在class开头声明过变量类型，这里左边就不用写类型了
 
         cornerTest(points);       // 输入的边界测试
@@ -47,11 +46,12 @@ public class FastCollinearPoints {
         // 以Origin点为斜率计算的端点，将数组排序，找出其中所有共线点
 
         Point[] slopeSoredPoints = points.clone();
-        Arrays.sort(slopeSoredPoints, origin.slopeOrder());     // 按斜率排序数组的复印件
+        Arrays.sort(slopeSoredPoints, origin.slopeOrder());     // 按斜率排序
 
         double slope;
         int last = 1;
         int collinearNum = 2;
+
         while (last < slopeSoredPoints.length - 1) {
 
             // 初始化斜率，寻找共线点
@@ -62,10 +62,11 @@ public class FastCollinearPoints {
 
             while (slope == origin.slopeTo(slopeSoredPoints[last])) {
                 collinearNum++;
-                last++;
+                if (last < slopeSoredPoints.length - 1)
+                    last++;
+                else break;
             }
             // 退出循环的时候，last所指向的，是第一个不同斜率的点
-
 
             if (collinearNum >= 4)       // 判断是否为某类的子类,如果是子类，就无事发生，如果不是子类就加入lineSegment。
             {
@@ -80,8 +81,9 @@ public class FastCollinearPoints {
                 // Math.min 只接受原始类型的参数，所以就排序来间接实现比大小。我记得书上也都是这么实现的。
 
                 if (copy[0].compareTo(origin) == 0) {
-                    lineSegments.add(new LineSegment(origin, slopeSoredPoints[last - 1]));
+                    lines[numOfSeg] = new LineSegment(origin, slopeSoredPoints[last - 1]);
                     numOfSeg++;
+                    if (numOfSeg == lines.length) resize(2 * lines.length);
                 }
             }
 
@@ -90,20 +92,29 @@ public class FastCollinearPoints {
 
     }
 
+    private void resize(int max) {
+        LineSegment[] temp = new LineSegment[max];
+        for (int i = 0; i < numOfSeg; i++)
+            temp[i] = lines[i];
+        lines = temp;
+    }
 
     // Corner cases. Throw a java.lang.IllegalArgumentException if the argument to the constructor is null,
     // if any point in the array is null, or if the argument to the constructor contains a repeated point.
-    private void cornerTest(Point[] points) {
-        // 从BruteCollinearPoints抄的
-        if (points == null)
+    private void cornerTest(Point[] sortedPointss) {
+
+        if (sortedPointss == null)
             throw new IllegalArgumentException();
-        int N = points.length;
+        int N = sortedPointss.length;
         if (N > 1) {
             for (int i = 0; i < N - 1; i++)
-                if (points[i] == null || points[i].compareTo(points[i + 1]) == 0)
+                if (sortedPointss[i] == null
+                        || sortedPointss[i].compareTo(sortedPointss[i + 1]) == 0)
+                    // 第二个式子，不能直接用 == 比两个对象的值是否相等，equals也没有重载，所以只能用compareTo是否为0来判断
+                    // 传入的是已经排序过的数组，所以只要比附近的就行
                     throw new IllegalArgumentException();
 
-            if (points[N - 1] == null)
+            if (sortedPointss[N - 1] == null)
                 throw new IllegalArgumentException();
         }
     }
@@ -117,11 +128,10 @@ public class FastCollinearPoints {
 
     public LineSegment[] segments()                // the line segments
     {
-        LineSegment[] lines = new LineSegment[numOfSeg];
+        LineSegment[] lineSegment = new LineSegment[numOfSeg];
         for (int i = 0; i < numOfSeg; i++)
-            lines[i] = lineSegments.get(i);
-        return lines;
-        // 话说，局部变量的话，能成功把引用返回出去吗，就是，引用指向的对象会不会在函数结束就被清除了？还是说，引用变量会消失，但是这个对象还有指针留下，所以不会被垃圾回收？
+            lineSegment[i] = lines[i];
+        return lineSegment;
     }
 
     public static void main(String[] args) {
@@ -145,7 +155,7 @@ public class FastCollinearPoints {
         StdDraw.show();
 
         // print and draw the line segments
-        BruteCollinearPoints collinear = new BruteCollinearPoints(points);
+        FastCollinearPoints collinear = new FastCollinearPoints(points);
         for (LineSegment segment : collinear.segments()) {
             StdOut.println(segment);
             segment.draw();
