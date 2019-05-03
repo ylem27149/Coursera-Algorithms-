@@ -1,10 +1,9 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:去掉了ArrayList的调用。
- *  修改了segment()，避免返回的线段数组中会有Null
- *  在colliearFinder 的  while (slope == origin.slopeTo(slopeSoredPoints[last])) 循环，增加了对last的边界检测，以免最后一个元素符合条件时，last继续递增使得超出数组界限
- *  发现这种边界超出界限的bug，写几个printf显示关键参数变化轨迹，再手算模拟以下就很好debug了（其实就是C编译器的单步运行看参数变化，我猜这个应该内建也有这种功能？不过没找到，就先这样吧）
+ *  Description:
+ *  调整判断共线点时边界检测的逻辑，先加再判断。如果先判断再加，当最后一个点是共线点时，last所指向的变成共线点，在下面的坐标计算中会有问题
+ *  重写了输入的合法性检测部分
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
@@ -27,6 +26,7 @@ public class FastCollinearPoints {
         //已经在class开头声明过变量类型，这里左边就不用写类型了
 
         cornerTest(points);       // 输入的边界测试
+
         Point[] sortedPoints = points.clone();
         Arrays.sort(sortedPoints);        // sortedPoints按点的大小从小到大排序
 
@@ -62,9 +62,8 @@ public class FastCollinearPoints {
 
             while (slope == origin.slopeTo(slopeSoredPoints[last])) {
                 collinearNum++;
-                if (last < slopeSoredPoints.length - 1)
-                    last++;
-                else break;
+                last++;
+                if (last > slopeSoredPoints.length - 1) break;
             }
             // 退出循环的时候，last所指向的，是第一个不同斜率的点
 
@@ -101,22 +100,27 @@ public class FastCollinearPoints {
 
     // Corner cases. Throw a java.lang.IllegalArgumentException if the argument to the constructor is null,
     // if any point in the array is null, or if the argument to the constructor contains a repeated point.
-    private void cornerTest(Point[] sortedPointss) {
+    private void cornerTest(Point[] points) {
 
-        if (sortedPointss == null)
+        // 从BruteCollinerPoint复制的
+
+        if (points == null)
             throw new IllegalArgumentException();
-        int N = sortedPointss.length;
-        if (N > 1) {
-            for (int i = 0; i < N - 1; i++)
-                if (sortedPointss[i] == null
-                        || sortedPointss[i].compareTo(sortedPointss[i + 1]) == 0)
-                    // 第二个式子，不能直接用 == 比两个对象的值是否相等，equals也没有重载，所以只能用compareTo是否为0来判断
-                    // 传入的是已经排序过的数组，所以只要比附近的就行
-                    throw new IllegalArgumentException();
 
-            if (sortedPointss[N - 1] == null)
+        for (Point p : points)
+            if (p == null) throw new IllegalArgumentException();
+        // 查找点集中有没有Null
+
+        Point[] sortedPoints = points.clone();
+        Arrays.sort(sortedPoints);  // 把数组按大小排列，方便接下来找有没有重复元素
+
+        int N = points.length;
+
+        for (int i = 0; i < N - 1; i++)
+            if (sortedPoints[i].compareTo(sortedPoints[i + 1]) == 0)
                 throw new IllegalArgumentException();
-        }
+
+        // 看看点集中有没有重复点
     }
     // How do I sort a subarray in Java? Arrays.sort(a, lo, hi) sorts the subarray from a[lo] to a[hi-1] according to the natural order of a[].
     // You can use a Comparator as the fourth argument to sort according to an alternate order.
