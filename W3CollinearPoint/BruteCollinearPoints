@@ -1,8 +1,8 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:去掉了ArrayList的调用。
- *  修改了segment()，避免返回的线段数组中会有Null
+ *  Description:修改了四点共线的判据。应该有三对斜率相等才能算共线，只有12和34斜率相等是不够的。
+ *  重写了输入的合法性检测部分,把合法性检测放在clone数组之前。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
@@ -17,17 +17,20 @@ public class BruteCollinearPoints {
 
     public BruteCollinearPoints(Point[] points)    // finds all line segments containing 4 points
     {
+
+
         numOfSeg = 0;
         lineSegments = new LineSegment[2];
+
+        cornerTest(points);// 输入的边界测试
+
         Point[] pointcopy = points.clone();
         // 直接写 Point[] pointcopy = points 似乎并不能创建一份拷贝，只是多创建了一个指针。
         Arrays.sort(
                 pointcopy);
         // 把点进行排序，使用的是Point类的compareTo，即按照y坐标排序
-        //我不太会用这些内建的排序来着。都有哪些？head first java上的collection.sort等和这个有什么区别？
 
-        cornerTest(pointcopy);
-        // 输入的边界测试
+
         double slope1;
 
         // 检测 first,second,third,last四个点是否共线
@@ -36,9 +39,11 @@ public class BruteCollinearPoints {
                 slope1 = pointcopy[first].slopeTo(pointcopy[second]);
                 for (int third = second + 1; third < pointcopy.length - 1; third++) {
                     for (int last = third + 1; last < pointcopy.length; last++)
-                        if (slope1 == pointcopy[third].slopeTo(pointcopy[last])) {
+                        if (slope1 == pointcopy[third].slopeTo(pointcopy[last])
+                                && slope1 == pointcopy[second].slopeTo(pointcopy[third])) {
                             lineSegments[numOfSeg] = new LineSegment(pointcopy[first],
                                                                      pointcopy[last]);
+
                             numOfSeg++;
                             if (numOfSeg == lineSegments.length)
                                 resize(2 * lineSegments.length);
@@ -51,24 +56,27 @@ public class BruteCollinearPoints {
     // Corner cases. Throw a java.lang.IllegalArgumentException if the argument to the constructor is null,
     // if any point in the array is null, or if the argument to the constructor contains a repeated point.
 
-    private void cornerTest(Point[] sortedPointss) {
+    private void cornerTest(Point[] points) {
 
         // FastCollinerPoint 复用了的这里的代码
 
-        if (sortedPointss == null)
+        if (points == null)
             throw new IllegalArgumentException();
-        int N = sortedPointss.length;
-        if (N > 1) {
-            for (int i = 0; i < N - 1; i++)
-                if (sortedPointss[i] == null
-                        || sortedPointss[i].compareTo(sortedPointss[i + 1]) == 0)
-                    // 第二个式子，不能直接用 == 比两个对象的值是否相等，equals也没有重载，所以只能用compareTo是否为0来判断
-                    // 传入的是已经排序过的数组，所以只要比附近的就行
-                    throw new IllegalArgumentException();
 
-            if (sortedPointss[N - 1] == null)
+        for (Point p : points)
+            if (p == null) throw new IllegalArgumentException();
+        // 查找点集中有没有Null
+
+        Point[] sortedPoints = points.clone();
+        Arrays.sort(sortedPoints);  // 把数组按大小排列，方便接下来找有没有重复元素
+
+        int N = points.length;
+
+        for (int i = 0; i < N - 1; i++)
+            if (sortedPoints[i].compareTo(sortedPoints[i + 1]) == 0)
                 throw new IllegalArgumentException();
-        }
+
+        // 看看点集中有没有重复点
     }
 
     private void resize(int max) {
