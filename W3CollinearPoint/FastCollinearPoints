@@ -23,8 +23,6 @@ public class FastCollinearPoints {
         numOfSeg = 0;
         lines = new LineSegment[2];
 
-        //已经在class开头声明过变量类型，这里左边就不用写类型了
-
         cornerTest(points);       // 输入的边界测试
 
         Point[] sortedPoints = points.clone();
@@ -67,17 +65,16 @@ public class FastCollinearPoints {
             }
             // 退出循环的时候，last所指向的，是第一个不同斜率的点
 
-            if (collinearNum >= 4)       // 判断是否为某类的子类,如果是子类，就无事发生，如果不是子类就加入lineSegment。
+            if (collinearNum >= 4)       // 如果端点是共线点中的最小点，加入lineSegment。
             {
                 Point[] copy = new Point[collinearNum];
                 copy[0] = origin;
                 for (int i = 1; i < collinearNum; i++)
                     copy[i] = slopeSoredPoints[last - collinearNum
                             + i];
-                // clone 不接受参数，不知道数组有没有内建的复制一部分的方法，就干脆自己写了，也不麻烦
-
+               
                 Arrays.sort(copy);
-                // Math.min 只接受原始类型的参数，所以就排序来间接实现比大小。我记得书上也都是这么实现的。
+                // 把共线点从小到大排序
 
                 if (copy[0].compareTo(origin) == 0) {
                     lines[numOfSeg] = new LineSegment(origin, slopeSoredPoints[last - 1]);
@@ -92,6 +89,9 @@ public class FastCollinearPoints {
     }
 
     private void resize(int max) {
+    
+    // 调整lines数组大小
+    
         LineSegment[] temp = new LineSegment[max];
         for (int i = 0; i < numOfSeg; i++)
             temp[i] = lines[i];
