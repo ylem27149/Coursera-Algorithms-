@@ -1,10 +1,12 @@
-# [8-Puzzle] (http://coursera.cs.princeton.edu/algs4/assignments/8puzzle.html)  
+# [8-Puzzle](http://coursera.cs.princeton.edu/algs4/assignments/8puzzle.html)  
 
+```
     1  3        1     3        1  2  3        1  2  3        1  2  3    
  4  2  5   =>   4  2  5   =>   4     5   =>   4  5      =>   4  5  6    
  7  8  6        7  8  6        7  8  6        7  8  6        7  8     
  
  initial        1 left          2 up          5 left          goal 
+ ```
  
 ## Board
 
