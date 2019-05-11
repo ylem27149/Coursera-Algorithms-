@@ -1,4 +1,4 @@
-# 8-Puzzle (http://coursera.cs.princeton.edu/algs4/assignments/8puzzle.html)  
+# [8-Puzzle] (http://coursera.cs.princeton.edu/algs4/assignments/8puzzle.html)  
 
     1  3        1     3        1  2  3        1  2  3        1  2  3    
  4  2  5   =>   4  2  5   =>   4     5   =>   4  5      =>   4  5  6    
@@ -16,11 +16,13 @@
  
  只计算前八格
  
+ ```
  8  1  3        1  2  3     1  2  3  4  5  6  7  8    1  2  3  4  5  6  7  8  
- 4     2        4  5  6     ----------------------    ----------------------  
- 7  6  5        7  8        1  1  0  0  1  1  0  1    1  2  0  0  2  2  0  3  
+ 4     2        4  5  6     ----------------------    ----------------------    
+ 7  6  5        7  8        1  1  0  0  1  1  0  1    1  2  0  0  2  2  0  3    
 
  initial          goal         Hamming = 5 + 0          Manhattan = 10 + 0  
+ ```
  
  **Should the hamming() and manhattan() methods in Board return the Hamming and Manhattan priority functions, respectively?**   
  No.You will compute the priority function in Solver by calling hamming() or manhattan() and adding to it the number of moves. 
@@ -76,7 +78,7 @@
  * Priority = ManhanttanDistance + moves
  
  Priority function: implements Comparable 接口。用这个数据结构作为元素，实现minPQ的大小判断 
- * 在整个求解过程中，delMin取出的Node.Priority是不会减小的（见Checklist(http://coursera.cs.princeton.edu/algs4/checklists/8puzzle.html)）所以必须要把predecessor从neighbors中去除，它不仅会造成冗余，还可能会卡住求解过程。
+ * 在整个求解过程中，delMin取出的Node.Priority是不会减小的（见[Checklist](http://coursera.cs.princeton.edu/algs4/checklists/8puzzle.html)）所以必须要把predecessor从neighbors中去除，它不仅会造成冗余，还可能会卡住求解过程。
  * 另外，如果两个SearchNode.priority相等，比较它们的Manhattan distances（这个是从网上找的参考代码学到的）相等moves的ManhanttanDistance肯定不可能相等，否则就是同一Board了。所以priority相等肯定是moves不同的两批neighbors，这时候应该取出更新的，距离目标更近的，也就是moves大ManhanttanDistance小的一个。  
  When two search nodes have the same Manhattan priority, you can break ties however you want, e.g., by comparing either the Hamming or Manhattan distances of the two boards.
  
@@ -94,7 +96,7 @@
 
 Can I put the logic for detecting whether a puzzle is infeasible in Board instead of Solver? There is a elegant algorithm for determining whether a board is solvable that relies on a parity argument (and occasionally we change our API to require this solution). However, the current API requires you to detect infeasiblity in Solver by using two synchronized A* searches (e.g., using two priority queues).  
 
- ### checklist(http://coursera.cs.princeton.edu/algs4/checklists/8puzzle.html)
+ ### [checklist](http://coursera.cs.princeton.edu/algs4/checklists/8puzzle.html)
  
  1. Solution  
  How do I reconstruct the solution once I've dequeued the goal search node?   
