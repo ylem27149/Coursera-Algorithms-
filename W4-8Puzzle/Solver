@@ -1,0 +1,147 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:2019.5.8
+ *  Description:
+ *  if the priority of the search node dequeued from the priority queue decreases, then you know you did something wrong.
+ *
+ *  My program can't solve some of the 4-by-4 puzzles, even if I give it a huge amount of space. What am I doing wrong?
+ *  Probably nothing. The A* algorithm (with the Manhattan priority function) will struggle to solve even some 4-by-4 instances.
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.MinPQ;
+import edu.princeton.cs.algs4.Queue;
+import edu.princeton.cs.algs4.StdOut;
+
+public class Solver {
+
+    private Queue<Board> solutions;
+    // solution 函数让返回Board 的迭代，那元素肯定是Board而不是SearchNode
+    private boolean isSolvable;
+    private int totalMoves;
+
+    public Solver(
+            Board initial)           // find a solution to the initial board (using the A* algorithm)
+    {
+
+        //  The constructor should throw a java.lang.IllegalArgumentException if passed a null argument.
+        if (initial == null) throw new IllegalArgumentException();
+
+        // initial 似乎clone一份更好，不过要自己写clone代码，算了。
+        solutions = new Queue<Board>();
+
+        MinPQ<SearchNode> searchPQ = new MinPQ<SearchNode>();
+        MinPQ<SearchNode> twinSearchPQ = new MinPQ<SearchNode>();
+
+        SearchNode current = new SearchNode(initial, null);
+        SearchNode twinCurrent = new SearchNode(initial.twin(), null);
+        
+        while (!current.board.isGoal() && !twinCurrent.board.isGoal()) {
+
+            solutions.enqueue(current.board);       // 把每次取出的delMin boaed加入solution，如果不可解，再Null掉
+
+            // 计算给定board的解
+            for (Board b : current.board.neighbors())
+                if (current.predecessor == null || !b.equals(current.predecessor.board))
+                    searchPQ.insert(new SearchNode(b, current));
+
+            current = searchPQ.delMin();
+
+            // 计算twin board的解
+            for (Board b : twinCurrent.board.neighbors())
+                if (twinCurrent.predecessor == null || !b.equals(twinCurrent.predecessor.board))
+                    twinSearchPQ.insert(new SearchNode(b, twinCurrent));
+
+            twinCurrent = twinSearchPQ.delMin();
+        }
+
+        // 如果可解
+        if (current.board.isGoal()) {
+            isSolvable = true;
+            totalMoves = current.move;
+        }
+
+        // 如果twin board可解
+        else {
+            isSolvable = false;
+            totalMoves = -1;
+            solutions = null;
+        }
+
+
+    }
+
+    private class SearchNode implements Comparable<SearchNode> { // 定义了结点的嵌套类
+
+        // 其实不确定这些修饰符要怎么写……变量要不要Private？构造函数是private还是public？实例变量要不要final？
+        // 不过类都private了，实例变量构造函数写不写Private都一样吧?
+
+        private final Board board;
+        private final SearchNode predecessor;
+        private final int move;
+        private final int priority;
+
+        SearchNode(Board board, SearchNode predecessor) {
+            this.board = board;
+            this.predecessor = predecessor;
+            if (predecessor != null)
+                this.move = predecessor.move + 1;
+            else this.move = 0;
+
+            this.priority = this.move + board.manhattan();
+        }
+
+        public int compareTo(SearchNode a) {
+            // int 类型实现compareTo好像要用Integer.compare调用，double我记得也是这么调用的，但是String是有compareTo方法,是是否是原始类型的差别吗？
+
+            if (this.priority > a.priority) return 1;
+            if (this.priority == a.priority) return Integer.compare(this.move, a.move);
+            else return -1;
+
+        }
+    }
+
+
+    public boolean isSolvable()            // is the initial board solvable?
+    {
+        return isSolvable;
+
+
+        // the current API requires you to detect infeasiblity in Solver by using two synchronized A* searches
+        // (e.g., using two priority queues).
+    }
+
+    public int moves()                     // min number of moves to solve initial board; -1 if unsolvable
+    {
+        return totalMoves;
+
+    }
+
+    public Iterable<Board> solution()      // sequence of boards in a shortest solution; null if unsolvable
+    {
+        return solutions;
+    }
+
+    public static void main(String[] args) // solve a slider puzzle (given below)
+    {   // create initial board from file
+        In in = new In(args[0]);
+        int n = in.readInt();
+        int[][] blocks = new int[n][n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                blocks[i][j] = in.readInt();
+        Board initial = new Board(blocks);
+
+        // solve the puzzle
+        Solver solver = new Solver(initial);
+
+        // print solution to standard output
+        if (!solver.isSolvable())
+            StdOut.println("No solution possible");
+        else {
+            StdOut.println("Minimum number of moves = " + solver.moves());
+            for (Board board : solver.solution())
+                StdOut.println(board);
+        }
+    }
+}
