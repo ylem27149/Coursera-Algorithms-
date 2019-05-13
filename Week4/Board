@@ -1,27 +1,36 @@
+
 /* *****************************************************************************
  *  Name:
  *  Date:
  *  Description:
- *  immutable。好像能通过不给相关 method API来实现？
- *  写了一个全局变量来存储目标方阵，避免多次计算  dimension() * i + j + 1
- **************************************************************************** */
+ *  Moves 和 predecessor，不需要放在这个类型里。
+ *  参考了上一版代码
+ *  修改了manhattanDistance，应该把传入的参数作为goal的坐标来计算距离，而不是当前board的坐标。注意manhattan()函数中限制了传入前八个坐标，是指只计算goal中的前八个坐标。
+ *************************************************************************** */
 
-import edu.princeton.cs.algs4.Bag;
+import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.StdRandom;
+
+import java.util.Arrays;
 
 public class Board {
 
-    private final int[][] board;     // the initial board
+    private final int[][] board;     // this board
     private final int[][] goal;     // the goal board
     private final int n;        // the dimension of the board
+
     // Corner cases.You may assume that the constructor receives an n-by-n array containing the n2 integers
     // between 0 and n2 − 1, where 0 represents the blank square.
+    // Can I assume that the puzzle inputs (arguments to the Board constructor and input to Solver) are valid?
+    // Yes, though it never hurts to include some basic error checking.
 
     public Board(
             int[][] blocks)           // construct a board from an n-by-n array of blocks， (where blocks[i][j] = block in row i, column j
     {
-        board = blocks;
+        board = blocks.clone();
         n = board.length;           // length 可以获取数组长度。对于二维数组a[M][N]，a.length = M；a[0].length = N;
+
+        // 计算目标Board
         goal = new int[n][n];
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++) {
@@ -67,12 +76,16 @@ public class Board {
 
         // compute the manhattan distance of board[x][y]
 
+        int distance = 0;
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++) {
-                if (goal[i][j] == board[x][y])
-                    return Math.abs(i + j - x - y);
+                if (board[i][j] == goal[x][y]) {
+                    distance = Math.abs(i + j - x - y);
+                    break;
+                }
             }
-
+        return distance;
+        // 不知道为啥，直接在循环里return会报错没有return语句。感觉应该是一样的啊。
     }
 
     public boolean isGoal()                // is this board the goal board?
@@ -84,11 +97,13 @@ public class Board {
 
     // a board that is obtained by exchanging any pair of blocks (the blank square is not a block)
     //  You will use it to determine whether a puzzle is solvable: exactly one of a board and its twin are solvable
+    // it's different from neighbor
 
     {
         int[][] copy = board.clone();        // Board是不可变数据类型。要改值的话得新建一个数组先。
 
-        //产生两组不同的，被交换的坐标，对应的元素不能为0
+        //产生两组不同的，被交换的坐标，对应的元素不能为0。感觉写的好傻啊。
+        // 看了几分网上的，是直接写死，判断一下copy[0][0]~copy[1][1]是否非零。然后交换。
 
         int i = StdRandom.uniform(0, dimension());
         int j = StdRandom.uniform(0, dimension());
@@ -96,6 +111,7 @@ public class Board {
             i = StdRandom.uniform(0, dimension());
             j = StdRandom.uniform(0, dimension());
         }
+
         int p = StdRandom.uniform(0, dimension());
         int q = StdRandom.uniform(0, dimension());
         while (copy[p][q] == 0 || copy[p][q] == copy[i][j]) {
@@ -116,27 +132,34 @@ public class Board {
         a[i][j] = a[p][q];
         a[p][q] = number;
     }
+    // How do I implement equals()? Java has some arcane rules for implementing equals(), discussed on p. 103 of Algorithms, 4th edition.
+    // Note that the argument to equals() is required to be Object. You can also inspect Date.java or Transaction.java for online examples.
 
     public boolean equals(Object y)        // does this board equal y?
     {
-        // 这份API完全碰不到内部的数据啊。。要怎么对比呢……toString?
 
-        if (y == this) return true;     // emmm this 是指当前的Board变量吧？
+
         if (y == null) return false;
+        if (y == this) return true;
         if (y.getClass() != this.getClass()) return false;
-        Board that = (Board) y;
-        return this.toString().equals(that.toString());
+        Board yBoard = (Board) y;
+        if (yBoard.n != this.n) return false;
+        else return Arrays.deepEquals(this.board, yBoard.board);
+        // private的变量仍然可以在同一类中调用
     }
 
-    public Iterable<Board> neighbors()     // all neighboring boards  是0元素的所有相邻交换可能。
+    public Iterable<Board> neighbors()   // all neighboring boards
 
-    //咦。这个感觉没办法用统一的next来写吧。好像得先计算出来然后存储。。存储到一个能迭代输出的数据结构里，就行了吧？
-    // 看符号表的keys实现，返回一个集合类数据类型，是Iterable<>。调用.iterator,是iterator<>数据类型
-    // checklist 说用stack或者queue。但是我感觉bag更好哇。
+    // neighbors are those that can be reached in one move, that is ,exchange 0 block with its all neighbors
+
+    // How do I return an Iterable<Board>? Add the items you want to a Stack<Board> or Queue<Board> and return that.
+    // Of course, your client code should not depend on whether the iterable returned is a stack or queue(because it could be some any iterable).
 
     {
-        int x, y;   // board[x][y] = 0
+        int x = 0;
+        int y = 0;
 
+        // 寻找0元素所在的坐标
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++)
                 if (board[i][j] == 0) {
@@ -144,67 +167,57 @@ public class Board {
                     y = j;
                     break;
                 }
-        Bag<Board> neighborBoard = new Bag<Board>();
+
+        // board[x][y] = 0
+
+        Queue<Board> neighborBoard = new Queue<Board>();
         neighborProcess(neighborBoard, x, y);
         return neighborBoard;
 
     }
 
-    private void neighborProcess(Bag<Board> neighborBoard, int x, int y) {
+    private void neighborProcess(Queue<Board> neighborBoard, int x, int y) {
 
-        if (x - 1 >= 0) {
+
+        if (x != 0) {
             int[][] copy = board.clone();
             exchange(copy, x, y, x - 1, y);
-            Board neighor = new Board(copy);
-            neighborBoard.add(neighor);
+            neighborBoard.enqueue(new Board(copy));
         }
-        if (x + 1 < dimension()) {
+        if (x != dimension() - 1) {
             int[][] copy = board.clone();
             exchange(copy, x, y, x + 1, y);
-            Board neighor = new Board(copy);
-            neighborBoard.add(neighor);
+            neighborBoard.enqueue(new Board(copy));
 
         }
-        if (y - 1 >= 0) {
+        if (y != 0) {
             int[][] copy = board.clone();
             exchange(copy, x, y, x, y - 1);
-            Board neighor = new Board(copy);
-            neighborBoard.add(neighor);
+            neighborBoard.enqueue(new Board(copy));
         }
-        if (y + 1 < dimension()) {
+        if (y != dimension() - 1) {
             int[][] copy = board.clone();
             exchange(copy, x, y, x, y + 1);
-            Board neighor = new Board(copy);
-            neighborBoard.add(neighor);
+            neighborBoard.enqueue(new Board(copy));
         }
     }
+
+    // Be sure to include the board dimension and use 0 for the blank square.
+    // Use String.format() to format strings—it works like StdOut.printf(),
+    // but returns the string instead of printing it to standard output.
+    // For reference, our implementation is below, but yours may vary depending on your choice of instance variables.
 
     public String toString()               // string representation of this board (in the output format specified below)
-    //应该是这种格式？
-    // checklist里用了StringBuilder 数据类型，我没见过这个，先copy在下面
-    // public String toString() {
-    //     StringBuilder s = new StringBuilder();
-    //     s.append(n + "\n");
-    //     for (int i = 0; i < n; i++) {
-    //         for (int j = 0; j < n; j++) {
-    //             s.append(String.format("%2d ", tiles[i][j]));
-    //         }
-    //         s.append("\n");
-    //     }
-    //     return s.toString();
-    // }
     {
-        String s = null;
-        for (int i = 0; i < dimension(); i++) {
-            s = s + "\n";
-            for (int j = 0; j < dimension(); j++)
-                s = s + board[i][j] + " ";
+        StringBuilder s = new StringBuilder();
+        s.append(n + "\n");
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                s.append(String.format("%2d ", board[i][j]));
+            }
+            s.append("\n");
         }
-        return dimension() + s;
+        return s.toString();
     }
 
-    public static void main(String[] args) // unit tests (not graded)
-    {
-
-    }
 }
