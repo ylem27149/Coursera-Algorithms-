@@ -81,15 +81,19 @@
  
  Priority function: implements Comparable 接口。用这个数据结构作为元素，实现minPQ的大小判断 
  * 在整个求解过程中，delMin取出的Node.Priority是不会减小的（见[Checklist](http://coursera.cs.princeton.edu/algs4/checklists/8puzzle.html)）所以必须要把predecessor从neighbors中去除，它不仅会造成冗余，还可能会卡住求解过程。
- * 另外，如果两个SearchNode.priority相等，比较它们的Manhattan distances（这个是从网上找的参考代码学到的）相等moves的ManhanttanDistance肯定不可能相等，否则就是同一Board了。所以priority相等肯定是moves不同的两批neighbors，这时候应该取出更新的，距离目标更近的，也就是moves大ManhanttanDistance小的一个。  
- When two search nodes have the same Manhattan priority, you can break ties however you want, e.g., by comparing either the Hamming or Manhattan distances of the two boards.
+ * 另外，如果两个SearchNode.priority相等，比较它们的Manhattan distances（这个是从网上找的参考代码学到的）
+    * 如果遇到priority相等moves不同的两批neighbors，这时候应该取出更新的，距离目标更近的，也就是moves大ManhanttanDistance小的一个。  
+ 
  
 ### 求解过程
  
  1. 在minPQ中插入初始SearchNode（0 moves, null predecessor)  
  2. delMin，得到求解过程的下一个SearchNode。然后在minPQ插入得到的SearchNode.board.neighbors  
- 3. 当取出的SearchNode.board.isGoal()，得到解
+ 3. 当取出的SearchNode.board.isGoal()，用取出的节点的predecessor不断回溯，得到最短路径。过程中记录delMin得到的可能并不是解。  
+    * 所以应该用stack存储solution  
+    *  如果遇到同一批（Moves相同）board具有相同manhattanDistance的情况，可能会有错误的尝试。即searchPQ.delMin()移动后（neighbors board)，反而增大了manhanttan distance。这时候delMin（）就会回去试上一批的相同distance的其他board，这种可能的错误尝试，导致一路上的delMin()并不等于solution
  
+
 ### 可解性
  
  Board和它的twinBoard，有且只有一个可解。
