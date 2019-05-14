@@ -3,13 +3,15 @@
  *  Name:
  *  Date:
  *  Description:
- *  Moves 和 predecessor，不需要放在这个类型里。
- *  参考了上一版代码
- *  修改了manhattanDistance，应该把传入的参数作为goal的坐标来计算距离，而不是当前board的坐标。注意manhattan()函数中限制了传入前八个坐标，是指只计算goal中的前八个坐标。
+ *  修改了manhattanDistance，应该是goal与board的横纵坐标分别相减的绝对值再相加。
+ *  增加了二维数组的复制代码。二维数组clone的是其一维分数组的引用，所以并没有新建一份副本，还是会被之前的操作影响。
+ *  还是不要自己写printf调试了，又麻烦，又容易删不干净提交后引起bug。
+ *  修改了twin，理解错了题设，检查中要求多次调用得到同样的twinBoard，所以把原来的随机产生一个twinBoard改成了固定的。
  *************************************************************************** */
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Queue;
-import edu.princeton.cs.algs4.StdRandom;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.Arrays;
 
@@ -27,10 +29,15 @@ public class Board {
     public Board(
             int[][] blocks)           // construct a board from an n-by-n array of blocks， (where blocks[i][j] = block in row i, column j
     {
-        board = blocks.clone();
-        n = board.length;           // length 可以获取数组长度。对于二维数组a[M][N]，a.length = M；a[0].length = N;
+        n = blocks.length;       // length 可以获取数组长度。对于二维数组a[M][N]，a.length = M；a[0].length = N;
 
-        // 计算目标Board
+        board = new int[n][n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                board[i][j] = blocks[i][j];
+
+
+        // 计算goal Board
         goal = new int[n][n];
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++) {
@@ -40,6 +47,17 @@ public class Board {
             }
 
 
+    }
+
+    private int[][] boardCopy()
+    // 创建该Board对应二维数组的拷贝
+    {
+        int[][] copy = new int[dimension()][dimension()];
+        for (int i = 0; i < dimension(); i++)
+            for (int j = 0; j < dimension(); j++)
+                copy[i][j] = board[i][j];
+
+        return copy;
     }
 
     public int dimension()                 // board dimension n
@@ -80,12 +98,13 @@ public class Board {
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++) {
                 if (board[i][j] == goal[x][y]) {
-                    distance = Math.abs(i + j - x - y);
+                    distance = Math.abs(i - x) + Math.abs(j - y);
+                    // StdOut.println("board " + x + ", " + y + " manhattanDistance is " + distance);
                     break;
                 }
             }
         return distance;
-        // 不知道为啥，直接在循环里return会报错没有return语句。感觉应该是一样的啊。
+        // 不知道为啥，直接在循环里return会报错没有return语句。应该是一样的啊。
     }
 
     public boolean isGoal()                // is this board the goal board?
@@ -99,25 +118,22 @@ public class Board {
     //  You will use it to determine whether a puzzle is solvable: exactly one of a board and its twin are solvable
     // it's different from neighbor
 
+
     {
-        int[][] copy = board.clone();        // Board是不可变数据类型。要改值的话得新建一个数组先。
+        int[][] copy = boardCopy();        // Board是不可变数据类型。要改值的话得新建一个数组先。
 
-        //产生两组不同的，被交换的坐标，对应的元素不能为0。感觉写的好傻啊。
-        // 看了几分网上的，是直接写死，判断一下copy[0][0]~copy[1][1]是否非零。然后交换。
+        //产生一对被交换的坐标，对应的元素不能为0。
+        // 假设 n 》1
 
-        int i = StdRandom.uniform(0, dimension());
-        int j = StdRandom.uniform(0, dimension());
-        while (copy[i][j] == 0) {
-            i = StdRandom.uniform(0, dimension());
-            j = StdRandom.uniform(0, dimension());
-        }
+        int i = 0;
+        int j = 0;
+        int p = 1;
+        int q = 1;
+        if (board[i][j] == 0)
+            j = 1;
+        else if (board[p][q] == 0)
+            q = 0;
 
-        int p = StdRandom.uniform(0, dimension());
-        int q = StdRandom.uniform(0, dimension());
-        while (copy[p][q] == 0 || copy[p][q] == copy[i][j]) {
-            p = StdRandom.uniform(0, dimension());
-            q = StdRandom.uniform(0, dimension());
-        }
         exchange(copy, i, j, p, q);     // exchange copy[i][j] between copy[p][q]
         Board twin = new Board(copy);
         return twin;
@@ -169,7 +185,6 @@ public class Board {
                 }
 
         // board[x][y] = 0
-
         Queue<Board> neighborBoard = new Queue<Board>();
         neighborProcess(neighborBoard, x, y);
         return neighborBoard;
@@ -178,25 +193,24 @@ public class Board {
 
     private void neighborProcess(Queue<Board> neighborBoard, int x, int y) {
 
-
         if (x != 0) {
-            int[][] copy = board.clone();
+            int[][] copy = boardCopy();
             exchange(copy, x, y, x - 1, y);
             neighborBoard.enqueue(new Board(copy));
         }
         if (x != dimension() - 1) {
-            int[][] copy = board.clone();
+            int[][] copy = boardCopy();
             exchange(copy, x, y, x + 1, y);
             neighborBoard.enqueue(new Board(copy));
 
         }
         if (y != 0) {
-            int[][] copy = board.clone();
+            int[][] copy = boardCopy();
             exchange(copy, x, y, x, y - 1);
             neighborBoard.enqueue(new Board(copy));
         }
         if (y != dimension() - 1) {
-            int[][] copy = board.clone();
+            int[][] copy = boardCopy();
             exchange(copy, x, y, x, y + 1);
             neighborBoard.enqueue(new Board(copy));
         }
@@ -220,4 +234,19 @@ public class Board {
         return s.toString();
     }
 
+    public static void main(String[] args) {
+        In in = new In(args[0]);
+        int n = in.readInt();
+        int[][] blocks = new int[n][n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                blocks[i][j] = in.readInt();
+        Board initial = new Board(blocks);
+        StdOut.println("board is " + initial);
+        StdOut.println("neighbors are");
+
+        for (Board b : initial.neighbors())
+            StdOut.println(b);
+
+    }
 }
