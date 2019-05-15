@@ -3,10 +3,7 @@
  *  Name:
  *  Date:
  *  Description:
- *  修改了manhattanDistance，应该是goal与board的横纵坐标分别相减的绝对值再相加。
- *  增加了二维数组的复制代码。二维数组clone的是其一维分数组的引用，所以并没有新建一份副本，还是会被之前的操作影响。
- *  还是不要自己写printf调试了，又麻烦，又容易删不干净提交后引起bug。
- *  修改了twin，理解错了题设，检查中要求多次调用得到同样的twinBoard，所以把原来的随机产生一个twinBoard改成了固定的。
+ *  删掉了goal数组的实例变量，不然memory测试过不了。改为函数。
  *************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
@@ -18,7 +15,6 @@ import java.util.Arrays;
 public class Board {
 
     private final int[][] board;     // this board
-    private final int[][] goal;     // the goal board
     private final int n;        // the dimension of the board
 
     // Corner cases.You may assume that the constructor receives an n-by-n array containing the n2 integers
@@ -37,20 +33,10 @@ public class Board {
                 board[i][j] = blocks[i][j];
 
 
-        // 计算goal Board
-        goal = new int[n][n];
-        for (int i = 0; i < dimension(); i++)
-            for (int j = 0; j < dimension(); j++) {
-                if (i + j != 2 * (dimension() - 1))
-                    goal[i][j] = dimension() * i + j + 1;
-                else goal[i][j] = 0;
-            }
-
-
     }
 
     private int[][] boardCopy()
-    // 创建该Board对应二维数组的拷贝
+    // 创建该Board对应二维数组的拷贝（clone无法创建超过一维数组的深拷贝）
     {
         int[][] copy = new int[dimension()][dimension()];
         for (int i = 0; i < dimension(); i++)
@@ -58,6 +44,13 @@ public class Board {
                 copy[i][j] = board[i][j];
 
         return copy;
+    }
+
+    private int goalBoard(int x, int y) {
+        if (x + y != 2 * (dimension() - 1))
+            return dimension() * x + y + 1;
+        else return 0;
+
     }
 
     public int dimension()                 // board dimension n
@@ -70,7 +63,7 @@ public class Board {
         int ham = 0;
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++)
-                if (i + j != 2 * (dimension() - 1) && board[i][j] != goal[i][j])
+                if (i + j != 2 * (dimension() - 1) && board[i][j] != goalBoard(i, j))
                     ham++;
 
         return ham;
@@ -83,7 +76,7 @@ public class Board {
         int distance = 0;
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++)
-                if (i + j != 2 * (dimension() - 1) && board[i][j] != goal[i][j])
+                if (i + j != 2 * (dimension() - 1) && board[i][j] != goalBoard(i, j))
                     distance = distance + manhattanDistance(i, j);
 
         return distance;
@@ -97,7 +90,7 @@ public class Board {
         int distance = 0;
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++) {
-                if (board[i][j] == goal[x][y]) {
+                if (board[i][j] == goalBoard(x, y)) {
                     distance = Math.abs(i - x) + Math.abs(j - y);
                     // StdOut.println("board " + x + ", " + y + " manhattanDistance is " + distance);
                     break;
@@ -153,8 +146,7 @@ public class Board {
 
     public boolean equals(Object y)        // does this board equal y?
     {
-
-
+        
         if (y == null) return false;
         if (y == this) return true;
         if (y.getClass() != this.getClass()) return false;
