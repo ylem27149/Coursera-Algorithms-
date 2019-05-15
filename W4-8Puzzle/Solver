@@ -1,22 +1,21 @@
 /* *****************************************************************************
  *  Name:
- *  Date:2019.5.8
+ *  Date:
  *  Description:
- *  if the priority of the search node dequeued from the priority queue decreases, then you know you did something wrong.
- *
- *  My program can't solve some of the 4-by-4 puzzles, even if I give it a huge amount of space. What am I doing wrong?
- *  Probably nothing. The A* algorithm (with the Manhattan priority function) will struggle to solve even some 4-by-4 instances.
+ *  修改了solution的创建代码。应该用goal.predecessor一路追踪路径，不能记录searchPQ.delMin()
+ *  修正了循环条件，测试认为除了阻止重复把predecessor插入minPQ,其他地方不应该用到Board.equals。
+ *      原来是比较current与initial是否相等，改为比较current == Null。
+ *  修改了compareTo, 如果两个SearchNode.priority相等，比较它们的Manhattan distances。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.MinPQ;
-import edu.princeton.cs.algs4.Queue;
+import edu.princeton.cs.algs4.Stack;
 import edu.princeton.cs.algs4.StdOut;
 
 public class Solver {
 
-    private Queue<Board> solutions;
-    // solution 函数让返回Board 的迭代，那元素肯定是Board而不是SearchNode
+    private Stack<Board> solutions;     // 返回从initial到goal的最短路径
     private boolean isSolvable;
     private int totalMoves;
 
@@ -28,24 +27,27 @@ public class Solver {
         if (initial == null) throw new IllegalArgumentException();
 
         // initial 似乎clone一份更好，不过要自己写clone代码，算了。
-        solutions = new Queue<Board>();
+        solutions = new Stack<Board>();
 
         MinPQ<SearchNode> searchPQ = new MinPQ<SearchNode>();
         MinPQ<SearchNode> twinSearchPQ = new MinPQ<SearchNode>();
 
         SearchNode current = new SearchNode(initial, null);
         SearchNode twinCurrent = new SearchNode(initial.twin(), null);
-        
-        while (!current.board.isGoal() && !twinCurrent.board.isGoal()) {
 
-            solutions.enqueue(current.board);       // 把每次取出的delMin boaed加入solution，如果不可解，再Null掉
+        // 如果输入节点直接就是goal
+
+        while (!current.board.isGoal() && !twinCurrent.board.isGoal()) {
 
             // 计算给定board的解
             for (Board b : current.board.neighbors())
-                if (current.predecessor == null || !b.equals(current.predecessor.board))
-                    searchPQ.insert(new SearchNode(b, current));
+                if (current.predecessor == null || !b.equals(current.predecessor.board)) {
+                    SearchNode node = new SearchNode(b, current);
+                    searchPQ.insert(node);
+                }
 
             current = searchPQ.delMin();
+
 
             // 计算twin board的解
             for (Board b : twinCurrent.board.neighbors())
@@ -55,10 +57,14 @@ public class Solver {
             twinCurrent = twinSearchPQ.delMin();
         }
 
-        // 如果可解
         if (current.board.isGoal()) {
             isSolvable = true;
             totalMoves = current.move;
+            while (current != null) {
+                solutions.push(current.board);
+                current = current.predecessor;
+            }
+
         }
 
         // 如果twin board可解
@@ -95,7 +101,8 @@ public class Solver {
             // int 类型实现compareTo好像要用Integer.compare调用，double我记得也是这么调用的，但是String是有compareTo方法,是是否是原始类型的差别吗？
 
             if (this.priority > a.priority) return 1;
-            if (this.priority == a.priority) return Integer.compare(this.move, a.move);
+            if (this.priority == a.priority)
+                return Integer.compare(this.priority - this.move, a.priority - a.move);
             else return -1;
 
         }
