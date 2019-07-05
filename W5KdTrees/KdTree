@@ -1,15 +1,14 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description: 修改了nearest()
- *  增加参数是否为null的判断
- *  在Insert中增加插入根节点的代码
- *  修改了range()：增加没有点的情况；修正搜索部分的逻辑错误
+ *  Description: 修改了nearest(),不再用最小距离作为参数。
+ *  因为它是原始类型，当向上回溯去搜索另一边子节点时，使用的最小距离实际上还会是没有进行任何搜索时候的旧值，并没有被已经完成搜索的子树的最小距离值取代。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.StdOut;
 
 public class KdTree {
 
@@ -184,52 +183,50 @@ public class KdTree {
             Point2D
                     p)             // a nearest neighbor in the set to point p; null if the set is empty
     {
-        double minSquDistance;
         if (p == null) throw new IllegalArgumentException();
         if (root.point == null) return null;
 
-        minSquDistance = root.point.distanceSquaredTo(p);   // 当root有点时,distance进行初始化
-        Node minNode = new Node();
+        Node minNode
+                = new Node();      // 注意，这里不能直接传入Node root,应该新建一个Node，以免root.point被错误修改。也不能直接传入point，那样在函数中修改了参数的地址，就没办法传出来
         minNode.point = root.point;
-        nearest(minSquDistance, root, p, 'x', minNode);
+        nearest(root, p, 'x', minNode);
         return minNode.point;
 
 
     }
 
 
-    private void nearest(double minSquDistance, Node searchNode, Point2D point, char ori,
-                         Node minNode) {
+    private void nearest(Node searchNode, Point2D point, char ori, Node minNode) {
         if (searchNode != null && searchNode.rectangle.distanceSquaredTo(point)
-                < minSquDistance) //点到矩形的距离是否小于当前最小距离，
+                < minNode.point.distanceSquaredTo(point)) //点到矩形的距离是否小于当前最小距离，
         {
-            if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小距离
-                minSquDistance = searchNode.point.distanceSquaredTo(point);
+            if (searchNode.point.distanceSquaredTo(point) < minNode.point
+                    .distanceSquaredTo(point)) { //更新最小距离
                 minNode.point = searchNode.point;
             }
             if (ori == 'x') {       // searchNode比较x坐标
                 if (point.x() < searchNode.point.x()) {
-                    nearest(minSquDistance, searchNode.left, point, 'y', minNode);
-                    nearest(minSquDistance, searchNode.right, point, 'y', minNode);
+                    nearest(searchNode.left, point, 'y', minNode);
+                    nearest(searchNode.right, point, 'y', minNode);
 
                     //如果被查询的点应该插入左子树，接下来先查找左节点
                     // when there are two possible subtrees to go down, you always choose the subtree that is on the same side of
                     // the splitting line as the query point as the first subtree to explore
                 }
                 else {
-                    nearest(minSquDistance, searchNode.right, point, 'y', minNode);
-                    nearest(minSquDistance, searchNode.left, point, 'y', minNode);
+                    nearest(searchNode.right, point, 'y', minNode);
+                    nearest(searchNode.left, point, 'y', minNode);
                 }
             }
             if (ori == 'y') {
                 if (point.y() < searchNode.point.y())       // point的纵坐标小于searchNode点的y，先走左支
                 {
-                    nearest(minSquDistance, searchNode.left, point, 'x', minNode);
-                    nearest(minSquDistance, searchNode.right, point, 'x', minNode);
+                    nearest(searchNode.left, point, 'x', minNode);
+                    nearest(searchNode.right, point, 'x', minNode);
                 }
                 else {
-                    nearest(minSquDistance, searchNode.right, point, 'x', minNode);
-                    nearest(minSquDistance, searchNode.left, point, 'x', minNode);
+                    nearest(searchNode.right, point, 'x', minNode);
+                    nearest(searchNode.left, point, 'x', minNode);
                 }
             }
 
@@ -239,6 +236,13 @@ public class KdTree {
 
     // unit testing of the methods (optional)
     public static void main(String[] args) {
+        KdTree test = new KdTree();
+        test.insert(new Point2D(0.7, 0.2));
+        test.insert(new Point2D(0.5, 0.4));
+        test.insert(new Point2D(0.2, 0.3));
+        test.insert(new Point2D(0.4, 0.7));
+        test.insert(new Point2D(0.9, 0.6));
+        StdOut.println(test.nearest(new Point2D(0.606, 0.623)));
 
     }
 }
