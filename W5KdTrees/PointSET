@@ -1,7 +1,7 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description:要记得检测传入的参数是否为null，然后throw new IllegalArgumentException();
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Point2D;
@@ -9,10 +9,6 @@ import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.RectHV;
 
 import java.util.TreeSet;
-
-// Write a mutable data type PointSET.java that represents a set of points in the unit square.
-// Implement the following API by using a red–black BST:
-// treeSet底层就是用红黑树实现的，所以也不用额外写啥。不过用不用重载一下排序？嗯，point2D本身就compareble，不用把（那好简单啊）
 
 public class PointSET {
 
@@ -49,6 +45,7 @@ public class PointSET {
 
     public boolean contains(Point2D p)            // does the set contain point p?
     {
+        if (p == null) throw new IllegalArgumentException();
         return pointset.contains(p);
     }
 
@@ -63,6 +60,7 @@ public class PointSET {
     public Iterable<Point2D> range(
             RectHV rect)             // all points that are inside the rectangle (or on the boundary)
     {
+        if (rect == null) throw new IllegalArgumentException();
         Queue<Point2D> pointInside = new Queue<Point2D>();
         for (Point2D p : pointset)
             if (rect.contains(p))
@@ -73,6 +71,7 @@ public class PointSET {
     public Point2D nearest(
             Point2D p)             // a nearest neighbor in the set to point p; null if the set is empty
     {
+        if (p == null) throw new IllegalArgumentException();
         if (isEmpty()) return null;
         Point2D minPoint = pointset.first();
         double minDistance = p.distanceSquaredTo(minPoint);
