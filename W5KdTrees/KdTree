@@ -1,0 +1,229 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.Point2D;
+import edu.princeton.cs.algs4.Queue;
+import edu.princeton.cs.algs4.RectHV;
+
+public class KdTree {
+
+    private int n;      // number of Nodes
+    private Node root;  // 根节点
+
+    private static class Node {
+        private Point2D point;      // the point
+        private RectHV rectangle;    // the axis-aligned rectangle corresponding to this node
+        private Node left;        // the left/bottom subtree
+        private Node right;        // the right/top subtree
+    }
+
+    public KdTree()                               // construct an empty set of points
+    {
+        n = 0;
+        root = new Node();
+        root.rectangle = new RectHV(0, 0, 1, 1);
+    }
+
+    public boolean isEmpty()                      // is the set empty?
+    {
+        return n == 0;
+    }
+
+    public int size()                         // number of points in the set
+    {
+        return n;
+    }
+
+    public void insert(
+            Point2D p)              // add the point to the set (if it is not already in the set)
+    {
+        if (!contains(p))
+            insert(root, p, 'x');
+    }
+
+
+    private void insert(Node searchNode, Point2D p, char ori) {
+
+        if (ori == 'x')    //比较x坐标
+        {
+            if (searchNode.point.x() > p.x())   // 比较x坐标后，走左子树
+            {
+                if (searchNode.left != null)
+                    insert(searchNode.left, p, 'y');        // 子树非空，继续查找
+                else {      //子树为空节点，创建新节点
+                    Node node = new Node();
+                    node.point = p;
+                    node.rectangle = new RectHV(searchNode.rectangle.xmin(),
+                                                searchNode.rectangle.ymin(), searchNode.point.x(),
+                                                searchNode.rectangle.ymax());
+                    n++;
+                    // Each node corresponds to an axis-aligned rectangle in the unit square, which encloses all of the points in its subtree.
+                    // The root corresponds to the unit square; the left and right children of the root corresponds to the two rectangles split by the x-coordinate of the point at the root; and so forth.
+                    // 子节点的矩形的坐标与其父节点的矩形坐标中的三个是相同的。如果走左树，会有一个max坐标跟父节点不同，右树min坐标有一个不同。
+                    // 如果父节点是比较x坐标，子节点的矩形的唯一一个不同坐标是父节点对应的点的x坐标。比较y同理。
+                    searchNode.left = node;
+                }
+            }
+            else {  //比较x坐标后，走右子树
+                if (searchNode.right != null)
+                    insert(searchNode.right, p, 'y');
+                else {      //子树为空节点，创建新节点
+                    Node node = new Node();
+                    node.point = p;
+                    node.rectangle = new RectHV(searchNode.point.x(),
+                                                searchNode.rectangle.ymin(),
+                                                searchNode.rectangle.xmax(),
+                                                searchNode.rectangle.ymax());
+                    n++;
+                    searchNode.right = node;
+                }
+            }
+        }
+        else {      // 比较y坐标
+            if (searchNode.point.y() > p.y())   // 比较y坐标后，走左子树
+            {
+                if (searchNode.left != null)
+                    insert(searchNode.left, p, 'x');
+                else {      //比较y坐标后,左子树为空节点，创建新节点
+                    Node node = new Node();
+                    node.point = p;
+                    node.rectangle = new RectHV(searchNode.rectangle.xmin(),
+                                                searchNode.rectangle.ymin(),
+                                                searchNode.rectangle.xmax(),
+                                                searchNode.point.y());
+                    n++;
+                    searchNode.left = node;
+                }
+            }
+            else {  // 比较y坐标后，走右子树
+                if (searchNode.right != null)
+                    insert(searchNode.right, p, 'x');
+                else {      //子树为空节点，创建新节点
+                    Node node = new Node();
+                    node.point = p;
+                    node.rectangle = new RectHV(searchNode.rectangle.xmin(),
+                                                searchNode.point.y(),
+                                                searchNode.rectangle.xmax(),
+                                                searchNode.rectangle.ymax());
+                    n++;
+                    searchNode.right = node;
+                }
+            }
+        }
+    }
+
+
+    public boolean contains(Point2D p)            // does the set contain point p?
+    {
+        return contains(root, p, 'x');
+    }
+
+    private boolean contains(Node searchNode, Point2D p, char ori) {
+        if (searchNode == null)
+            return false;
+        if (searchNode.point.equals(p)) return true;
+        if (ori == 'x') {
+            if (searchNode.point.x() > p.x()) return contains(searchNode.left, p, 'y');
+            else return contains(searchNode.right, p, 'y');
+        }
+        else {
+            if (searchNode.point.y() > p.y()) return contains(searchNode.left, p, 'x');
+            else return contains(searchNode.right, p, 'x');
+        }
+    }
+
+    public void draw()                         // draw all points to standard draw
+    {
+        draw(root);
+    }
+
+    private void draw(Node node) {
+        if (node.point != null) {
+            node.point.draw();
+            if (node.left != null)
+                draw(node.left);
+            if (node.right != null)
+                draw(node.right);
+        }
+    }
+
+    public Iterable<Point2D> range(
+            RectHV rect)             // all points that are inside the rectangle (or on the boundary)
+    {
+        Queue<Point2D> insidePoints = new Queue<Point2D>();
+        rangeSearch(root, rect, insidePoints);
+        return insidePoints;
+    }
+
+    private void rangeSearch(Node searchNode, RectHV rect, Queue<Point2D> queue) {
+        if (searchNode.rectangle.intersects(rect))      //如果当前节点的矩形和搜索矩形有重叠
+            if (rect.contains(searchNode.point)) {
+                queue.enqueue(searchNode.point);
+                if (searchNode.left != null) rangeSearch(searchNode.left, rect, queue);
+                if (searchNode.right != null) rangeSearch(searchNode.right, rect, queue);
+            }
+    }
+
+    public Point2D nearest(
+            Point2D
+                    p)             // a nearest neighbor in the set to point p; null if the set is empty
+    {
+        double minSquDistance;
+        Point2D minPoint = root.point;
+        if (n == 0) return null;
+        else minSquDistance = root.point.distanceSquaredTo(p);   // 当root有点时,distance进行初始化
+
+        nearest(minSquDistance, root, p, 'x', minPoint);
+        return minPoint;
+
+
+    }
+
+
+    private void nearest(double minSquDistance, Node searchNode, Point2D point, char ori,
+                         Point2D minPoint) {
+        if (searchNode != null && searchNode.rectangle.distanceSquaredTo(point)
+                < minSquDistance) //点到矩形的距离是否小于当前最小距离，
+        {
+            if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小距离
+                minSquDistance = searchNode.point.distanceSquaredTo(point);
+                minPoint = searchNode.point;
+            }
+            if (ori == 'x') {       // searchNode比较x坐标
+                if (point.x() < searchNode.point.x()) {
+                    nearest(minSquDistance, searchNode.left, point, 'y', minPoint);
+                    nearest(minSquDistance, searchNode.right, point, 'y', minPoint);
+
+                    //如果被查询的点应该插入左子树，接下来先查找左节点
+                    // when there are two possible subtrees to go down, you always choose the subtree that is on the same side of
+                    // the splitting line as the query point as the first subtree to explore
+                }
+                else {
+                    nearest(minSquDistance, searchNode.right, point, 'y', minPoint);
+                    nearest(minSquDistance, searchNode.left, point, 'y', minPoint);
+                }
+            }
+            if (ori == 'y') {
+                if (point.y() < searchNode.point.y())       // point的纵坐标小于searchNode点的y，先走左支
+                {
+                    nearest(minSquDistance, searchNode.left, point, 'x', minPoint);
+                    nearest(minSquDistance, searchNode.right, point, 'x', minPoint);
+                }
+                else {
+                    nearest(minSquDistance, searchNode.right, point, 'x', minPoint);
+                    nearest(minSquDistance, searchNode.left, point, 'x', minPoint);
+                }
+            }
+
+        }
+
+    }
+
+    // unit testing of the methods (optional)
+    public static void main(String[] args) {
+
+    }
+}
