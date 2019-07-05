@@ -1,7 +1,10 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description: 修改了nearest()
+ *  增加参数是否为null的判断
+ *  在Insert中增加插入根节点的代码
+ *  修改了range()：增加没有点的情况；修正搜索部分的逻辑错误
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Point2D;
@@ -40,7 +43,12 @@ public class KdTree {
     public void insert(
             Point2D p)              // add the point to the set (if it is not already in the set)
     {
-        if (!contains(p))
+        if (p == null) throw new IllegalArgumentException();
+        if (n == 0) {
+            root.point = p;
+            n++;
+        }
+        else if (!contains(p))
             insert(root, p, 'x');
     }
 
@@ -118,13 +126,16 @@ public class KdTree {
 
     public boolean contains(Point2D p)            // does the set contain point p?
     {
+        if (p == null) throw new IllegalArgumentException();
+        if (root.point == null)
+            return false;       // 只有root可能出现Node != null 而point == null,只要这里排除了这种情况，下面的就不会出现 searchNode.point == null 的报错
         return contains(root, p, 'x');
     }
 
     private boolean contains(Node searchNode, Point2D p, char ori) {
-        if (searchNode == null)
-            return false;
+        if (searchNode == null) return false;
         if (searchNode.point.equals(p)) return true;
+
         if (ori == 'x') {
             if (searchNode.point.x() > p.x()) return contains(searchNode.left, p, 'y');
             else return contains(searchNode.right, p, 'y');
@@ -153,6 +164,8 @@ public class KdTree {
     public Iterable<Point2D> range(
             RectHV rect)             // all points that are inside the rectangle (or on the boundary)
     {
+        if (rect == null) throw new IllegalArgumentException();
+        if (n == 0) return null;
         Queue<Point2D> insidePoints = new Queue<Point2D>();
         rangeSearch(root, rect, insidePoints);
         return insidePoints;
@@ -160,11 +173,11 @@ public class KdTree {
 
     private void rangeSearch(Node searchNode, RectHV rect, Queue<Point2D> queue) {
         if (searchNode.rectangle.intersects(rect))      //如果当前节点的矩形和搜索矩形有重叠
-            if (rect.contains(searchNode.point)) {
-                queue.enqueue(searchNode.point);
-                if (searchNode.left != null) rangeSearch(searchNode.left, rect, queue);
-                if (searchNode.right != null) rangeSearch(searchNode.right, rect, queue);
-            }
+        {
+            if (rect.contains(searchNode.point)) queue.enqueue(searchNode.point);
+            if (searchNode.left != null) rangeSearch(searchNode.left, rect, queue);
+            if (searchNode.right != null) rangeSearch(searchNode.right, rect, queue);
+        }
     }
 
     public Point2D nearest(
@@ -172,49 +185,51 @@ public class KdTree {
                     p)             // a nearest neighbor in the set to point p; null if the set is empty
     {
         double minSquDistance;
-        Point2D minPoint = root.point;
-        if (n == 0) return null;
-        else minSquDistance = root.point.distanceSquaredTo(p);   // 当root有点时,distance进行初始化
+        if (p == null) throw new IllegalArgumentException();
+        if (root.point == null) return null;
 
-        nearest(minSquDistance, root, p, 'x', minPoint);
-        return minPoint;
+        minSquDistance = root.point.distanceSquaredTo(p);   // 当root有点时,distance进行初始化
+        Node minNode = new Node();
+        minNode.point = root.point;
+        nearest(minSquDistance, root, p, 'x', minNode);
+        return minNode.point;
 
 
     }
 
 
     private void nearest(double minSquDistance, Node searchNode, Point2D point, char ori,
-                         Point2D minPoint) {
+                         Node minNode) {
         if (searchNode != null && searchNode.rectangle.distanceSquaredTo(point)
                 < minSquDistance) //点到矩形的距离是否小于当前最小距离，
         {
             if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小距离
                 minSquDistance = searchNode.point.distanceSquaredTo(point);
-                minPoint = searchNode.point;
+                minNode.point = searchNode.point;
             }
             if (ori == 'x') {       // searchNode比较x坐标
                 if (point.x() < searchNode.point.x()) {
-                    nearest(minSquDistance, searchNode.left, point, 'y', minPoint);
-                    nearest(minSquDistance, searchNode.right, point, 'y', minPoint);
+                    nearest(minSquDistance, searchNode.left, point, 'y', minNode);
+                    nearest(minSquDistance, searchNode.right, point, 'y', minNode);
 
                     //如果被查询的点应该插入左子树，接下来先查找左节点
                     // when there are two possible subtrees to go down, you always choose the subtree that is on the same side of
                     // the splitting line as the query point as the first subtree to explore
                 }
                 else {
-                    nearest(minSquDistance, searchNode.right, point, 'y', minPoint);
-                    nearest(minSquDistance, searchNode.left, point, 'y', minPoint);
+                    nearest(minSquDistance, searchNode.right, point, 'y', minNode);
+                    nearest(minSquDistance, searchNode.left, point, 'y', minNode);
                 }
             }
             if (ori == 'y') {
                 if (point.y() < searchNode.point.y())       // point的纵坐标小于searchNode点的y，先走左支
                 {
-                    nearest(minSquDistance, searchNode.left, point, 'x', minPoint);
-                    nearest(minSquDistance, searchNode.right, point, 'x', minPoint);
+                    nearest(minSquDistance, searchNode.left, point, 'x', minNode);
+                    nearest(minSquDistance, searchNode.right, point, 'x', minNode);
                 }
                 else {
-                    nearest(minSquDistance, searchNode.right, point, 'x', minPoint);
-                    nearest(minSquDistance, searchNode.left, point, 'x', minPoint);
+                    nearest(minSquDistance, searchNode.right, point, 'x', minNode);
+                    nearest(minSquDistance, searchNode.left, point, 'x', minNode);
                 }
             }
 
