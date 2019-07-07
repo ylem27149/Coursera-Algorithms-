@@ -1,0 +1,139 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description: 看到FAQ里说这部分会用到BFS，仔细想了下，我这种写法只对单父节点简单情况才有用orz。下一版就推翻重写了，保存下来纪念一下。
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.Digraph;
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.Queue;
+import edu.princeton.cs.algs4.StdIn;
+import edu.princeton.cs.algs4.StdOut;
+
+public class SAP {
+    private Queue<Integer>[] hypernym;  // 每个节点的上位词，从近到远
+    // 只有构造函数才能读取G，所以要把其中能用到的信息都存到instance variable 里（存上位数组总比存整个graph省内存吧
+
+    // constructor takes a digraph (not necessarily a DAG)
+    public SAP(Digraph G) {
+        if (G == null) throw new IllegalArgumentException();
+        hypernym = (Queue<Integer>[]) new Queue[G.V()];
+
+        //泛型数组的创建。例如：Stack<String>[] a = (Stack<String>[]) new Stack[N];
+        // hypernym[i]，是保存节点i所有上位词的queue。
+        // 先进先出，这样更靠近该节点的上位词在前面，第一个搜索出的就会使最短路径
+
+        for (int i = 0; i < G.V(); i++)
+            // 对图中的每个节点，保存它的所有上位词。adj(i)返回所有从i指出的点的迭代，而从i指出的点就是i的上位词
+            upFind(G, i);
+
+    }
+
+    private void upFind(Digraph G, int i) {
+        // i是当前被搜索的节点。
+        if (G.adj(i) != null)
+            for (int m : G.adj(i)) {
+                hypernym[i].enqueue(m);
+                upFind(G, m);
+            }
+
+
+    }
+
+    private void cornerTest(int i) {
+        if (i < 0 || i >= hypernym.length)
+            throw new IllegalArgumentException();
+        // 其实我不懂为啥非得自己手写报错。就让它自己 throw NullPointer或者OutOfBourdry 不行吗？
+
+    }
+
+    // length of shortest ancestral path between v and w; -1 if no such path
+    public int length(int v, int w) {
+        cornerTest(v);
+        cornerTest(w);
+        int len1 = 0;       // len1 为 v节点到正在查找的上位词的距离
+        for (int i : hypernym[v]) {
+            len1++;
+            int len2 = 0;       // len2为w节点到正在查找的上位词的距离。每次v向上，w都会从头开始搜索，所以len2也要重新初始化
+            for (int j : hypernym[w]) {
+                len2++;
+                if (i == j) return len1 + len2;
+            }
+
+        }
+        return -1;      //跑完了for也没有满足i==j，就是没有路径，return -1
+    }
+
+    // a common ancestor of v and w that participates in a shortest ancestral path; -1 if no such path
+    public int ancestor(int v, int w) {
+        cornerTest(v);
+        cornerTest(w);
+        for (int i : hypernym[v])
+            for (int j : hypernym[w])
+                if (i == j) return i;
+        return -1;
+    }
+
+    // length of shortest ancestral path between any vertex in v and any vertex in w; -1 if no such path
+    public int length(Iterable<Integer> v, Iterable<Integer> w) {
+        if (v == null) throw new IllegalArgumentException();
+        if (w == null) throw new IllegalArgumentException();
+        int length = -1;
+        for (Integer i : v)
+            for (Integer j : w) {
+                if (i == null) throw new IllegalArgumentException();
+                if (j == null) throw new IllegalArgumentException();
+                if (length(i, j) == -1) continue;
+
+                if (length == -1)
+                    length = length(i, j);   //第一次循环，进行初始化。
+
+                if (length > length(i, j))  //寻找最小的公共节点
+
+                    length = length(i, j);
+
+
+            }
+        return length;
+    }
+
+    // a common ancestor that participates in shortest ancestral path; -1 if no such path
+    public int ancestor(Iterable<Integer> v, Iterable<Integer> w) {
+        if (v == null) throw new IllegalArgumentException();
+        if (w == null) throw new IllegalArgumentException();
+        int length = -1;
+        int ancestor = -1;
+        for (Integer i : v)
+            for (Integer j : w) {
+                if (i == null) throw new IllegalArgumentException();
+                if (j == null) throw new IllegalArgumentException();
+                if (ancestor(i, j) == -1) continue;
+
+                if (ancestor == -1) {
+                    length = length(i, j);   //第一次循环，进行初始化。
+                    ancestor = ancestor(i, j);
+                }
+                if (length > length(i, j))  //寻找最小的公共节点
+                {
+                    length = length(i, j);
+                    ancestor = ancestor(i, j);
+                }
+
+            }
+        return ancestor;
+    }
+
+    // do unit testing of this class
+    public static void main(String[] args) {
+        In in = new In(args[0]);
+        Digraph G = new Digraph(in);
+        SAP sap = new SAP(G);
+        while (!StdIn.isEmpty()) {
+            int v = StdIn.readInt();
+            int w = StdIn.readInt();
+            int length = sap.length(v, w);
+            int ancestor = sap.ancestor(v, w);
+            StdOut.printf("length = %d, ancestor = %d\n", length, ancestor);
+        }
+    }
+}
