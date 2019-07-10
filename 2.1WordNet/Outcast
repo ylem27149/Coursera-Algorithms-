@@ -1,0 +1,42 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description: 计算距离时，每轮外循环需要把distance置零
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.StdOut;
+
+public class Outcast {
+    private WordNet wordNet;
+
+    public Outcast(WordNet wordnet)         // constructor takes a WordNet object
+    {
+        wordNet = wordnet;
+    }
+
+    public String outcast(String[] nouns)   // given an array of WordNet nouns, return an outcast
+    // Assume that argument to outcast() contains only valid wordnet nouns
+    // (and that it contains at least two such nouns).
+    {
+        int maxDistance = -1;
+        String outcast = "";
+        int distance;
+        for (String a : nouns) {
+            distance = 0;
+            for (String b : nouns)
+                distance = distance + wordNet.distance(a, b);   // 计算a与其他noun之间的总距离
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                outcast = a;
+            }
+        }
+        return outcast;
+    }
+
+    public static void main(String[] args)  // see test client below
+    {
+        Outcast test = new Outcast(new WordNet("synsets.txt", "hypernyms.txt"));
+        String[] nouns = { "probability", "statistics", "mathematics", "physics" };
+        StdOut.println(test.outcast(nouns));
+    }
+}
