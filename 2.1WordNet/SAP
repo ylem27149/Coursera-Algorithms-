@@ -2,14 +2,20 @@
  *  Name:
  *  Date:
  *  Description:Iterable<Integer>中的Integer也需要进行Null检测
+ * 尝试存储每个节点的所有上位词，会提示 Number of primitive operations in Digraph exceeds limit: 1000000000。放弃这个思路，回退到上一版
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.BreadthFirstDirectedPaths;
 import edu.princeton.cs.algs4.Digraph;
+import edu.princeton.cs.algs4.Queue;
+
+import java.util.HashSet;
 
 public class SAP {
 
     private final Digraph digraph;
+    private HashSet<Integer>[] ancestors; // ancestors[i]是个保存了节点i所有上位词的queue。
+
 
     // constructor takes a digraph (not necessarily a DAG)
     public SAP(Digraph G) {
@@ -19,6 +25,31 @@ public class SAP {
         // However, because our Digraph data type is mutable, you must first make a defensive copy by calling the copy constructor.
         // 应该是说调用这个构造函数： public Digraph(Digraph G)
         // Initializes a new digraph that is a deep copy of the specified digraph.[[https://algs4.cs.princeton.edu/42digraph/Digraph.java.html
+        ancestors = (HashSet<Integer>[]) new HashSet[G.V()];
+
+        for (int i = 0; i < G.V(); i++)
+        // 对图中的每个节点，保存它的所有上位词。adj(i)返回所有从i指出的点的迭代，而从i指出的点就是i的上位词
+        {
+            ancestors[i] = new HashSet<Integer>();      // 里面每个元素也要new一下，忘了。
+            ancestors[i].add(i);
+            upFind(i);
+        }
+    }
+
+    private void upFind(int search) {
+        // 循环调用会stackoverflow，借鉴https://github.com/zhichaoh/Coursera-Algorithms/blob/master/src/SAP.java 用个queue存吧。另外考虑到不能重复去存，用set吧。
+        Queue<Integer> adj = new Queue<Integer>();
+        int i = search;
+        Iterable<Integer> adjI = digraph.adj(i);
+        while (adjI != null) {
+            for (int m : adjI) {
+                ancestors[search].add(m);
+                adj.enqueue(m);
+            }
+            if (adj.isEmpty()) break;
+            i = adj.dequeue();
+            adjI = digraph.adj(i);
+        }
 
     }
 
@@ -45,11 +76,8 @@ public class SAP {
 
         int length = -1;
 
-        for (int i = 0; i < digraph.V(); i++)
-
-        // 如果用我上一版的那种借助adj的思路，倒是不用扫描全部节点，不过写起来很绕。算了
-        {
-            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+        for (int i : ancestors[v]) {
+            if (bfsW.hasPathTo(i)) {
                 if (length == -1) length = bfsV.distTo(i) + bfsW.distTo(i);
                 else length = Math.min(bfsV.distTo(i) + bfsW.distTo(i), length);
             }
@@ -67,8 +95,8 @@ public class SAP {
         int length = -1;
         int ancestor = -1;
 
-        for (int i = 0; i < digraph.V(); i++) {
-            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+        for (int i : ancestors[v]) {
+            if (bfsW.hasPathTo(i)) {
                 if (length == -1) {
                     length = bfsV.distTo(i) + bfsW.distTo(i);
                     ancestor = i;
@@ -102,15 +130,19 @@ public class SAP {
 
         // To improve the method length(Iterable<Integer> v, Iterable<Integer> w)  time-taking proportional to  E + V?,
         // The key is using the constructor in BreadthFirstDirectedPaths that takes an iterable of sources instead of using a single source
-        // 大概感觉了一下，应该直接copy上面的就行吧……
+
+        HashSet<Integer> adjV = new HashSet<Integer>();
+        for (int i : v)
+            adjV.addAll(ancestors[i]);
+
+        HashSet<Integer> adjW = new HashSet<Integer>();
+        for (int i : w)
+            adjW.addAll(ancestors[i]);
 
         int length = -1;
 
-        for (int i = 0; i < digraph.V(); i++)
-
-        // 如果用我上一版的那种借助adj的思路，倒是不用扫描全部节点，不过写起来很绕。算了
-        {
-            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+        for (int i : adjV) {
+            if (adjW.contains(i)) {
                 if (length == -1) length = bfsV.distTo(i) + bfsW.distTo(i);
                 else length = Math.min(bfsV.distTo(i) + bfsW.distTo(i), length);
             }
@@ -135,11 +167,21 @@ public class SAP {
 
         BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
         BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
+
+        HashSet<Integer> adjV = new HashSet<Integer>();
+        for (int i : v)
+            adjV.addAll(ancestors[i]);
+
+        HashSet<Integer> adjW = new HashSet<Integer>();     // 如果空间不够可以把这个省掉，然后用distTo判断
+        for (int i : w)
+            adjW.addAll(ancestors[i]);
+
         int length = -1;
         int ancestor = -1;
 
-        for (int i = 0; i < digraph.V(); i++) {
-            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+
+        for (int i : adjV) {
+            if (adjW.contains(i)) {
                 if (length == -1) {
                     length = bfsV.distTo(i) + bfsW.distTo(i);
                     ancestor = i;
