@@ -1,21 +1,17 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:Iterable<Integer>中的Integer也需要进行Null检测
- * 尝试存储每个节点的所有上位词，会提示 Number of primitive operations in Digraph exceeds limit: 1000000000。放弃这个思路，回退到上一版
+ *  Description:尝试了一下把共同部分的代码写在一个函数里，反而通不过Iterable<Integer> v相关的测试了，摸不着头脑。再次回退吧……
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.BreadthFirstDirectedPaths;
 import edu.princeton.cs.algs4.Digraph;
-import edu.princeton.cs.algs4.Queue;
-
-import java.util.HashSet;
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdOut;
 
 public class SAP {
 
     private final Digraph digraph;
-    private HashSet<Integer>[] ancestors; // ancestors[i]是个保存了节点i所有上位词的queue。
-
 
     // constructor takes a digraph (not necessarily a DAG)
     public SAP(Digraph G) {
@@ -25,31 +21,6 @@ public class SAP {
         // However, because our Digraph data type is mutable, you must first make a defensive copy by calling the copy constructor.
         // 应该是说调用这个构造函数： public Digraph(Digraph G)
         // Initializes a new digraph that is a deep copy of the specified digraph.[[https://algs4.cs.princeton.edu/42digraph/Digraph.java.html
-        ancestors = (HashSet<Integer>[]) new HashSet[G.V()];
-
-        for (int i = 0; i < G.V(); i++)
-        // 对图中的每个节点，保存它的所有上位词。adj(i)返回所有从i指出的点的迭代，而从i指出的点就是i的上位词
-        {
-            ancestors[i] = new HashSet<Integer>();      // 里面每个元素也要new一下，忘了。
-            ancestors[i].add(i);
-            upFind(i);
-        }
-    }
-
-    private void upFind(int search) {
-        // 循环调用会stackoverflow，借鉴https://github.com/zhichaoh/Coursera-Algorithms/blob/master/src/SAP.java 用个queue存吧。另外考虑到不能重复去存，用set吧。
-        Queue<Integer> adj = new Queue<Integer>();
-        int i = search;
-        Iterable<Integer> adjI = digraph.adj(i);
-        while (adjI != null) {
-            for (int m : adjI) {
-                ancestors[search].add(m);
-                adj.enqueue(m);
-            }
-            if (adj.isEmpty()) break;
-            i = adj.dequeue();
-            adjI = digraph.adj(i);
-        }
 
     }
 
@@ -64,25 +35,11 @@ public class SAP {
     public int length(int v, int w) {
         cornerTest(v);
         cornerTest(w);
+
         BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
-        // if (bfsV.hasPathTo(w)) return bfsV.distTo(w);
-        // a vertex is considered an ancestor of itself.
-        // 如果两节点直接可达，那么它们之间的距离就是最短公共距离
-
         BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
-        // if (bfsW.hasPathTo(v)) return bfsW.distTo(v);
 
-        //其实这两句的逻辑完全可以放到下面的循环里不用单独写嗯。
-
-        int length = -1;
-
-        for (int i : ancestors[v]) {
-            if (bfsW.hasPathTo(i)) {
-                if (length == -1) length = bfsV.distTo(i) + bfsW.distTo(i);
-                else length = Math.min(bfsV.distTo(i) + bfsW.distTo(i), length);
-            }
-        }
-        return length;
+        return shortest(bfsV, bfsW)[0];
     }
 
     // a common ancestor of v and w that participates in a shortest ancestral path; -1 if no such path
@@ -92,22 +49,32 @@ public class SAP {
         BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
         BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
 
-        int length = -1;
-        int ancestor = -1;
+        return shortest(bfsV, bfsW)[1];
+    }
 
-        for (int i : ancestors[v]) {
-            if (bfsW.hasPathTo(i)) {
-                if (length == -1) {
-                    length = bfsV.distTo(i) + bfsW.distTo(i);
-                    ancestor = i;
+    private int[] shortest(BreadthFirstDirectedPaths bfsV, BreadthFirstDirectedPaths bfsW)
+
+    // 计算公共祖先和最短距离的复用代码
+    {
+
+        int[] shortest = { -1, -1 };       // 第一个元素存储最短距离，第二个元素存储公共祖先
+
+
+        for (int i = 0; i < digraph.V(); i++) {
+            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+                if (shortest[0] == -1) {
+                    shortest[0] = bfsV.distTo(i) + bfsW.distTo(i);
+                    shortest[1] = i;
                 }
-                else if (bfsV.distTo(i) + bfsW.distTo(i) < length) {
-                    length = bfsV.distTo(i) + bfsW.distTo(i);
-                    ancestor = i;
+                else if (bfsV.distTo(i) + bfsW.distTo(i) < shortest[0]) {
+                    shortest[0] = bfsV.distTo(i) + bfsW.distTo(i);
+                    shortest[1] = i;
                 }
             }
         }
-        return ancestor;
+
+        return shortest;
+
     }
 
     // length of shortest ancestral path between any vertex in v and any vertex in w; -1 if no such path
@@ -128,26 +95,7 @@ public class SAP {
         BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
         BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
 
-        // To improve the method length(Iterable<Integer> v, Iterable<Integer> w)  time-taking proportional to  E + V?,
-        // The key is using the constructor in BreadthFirstDirectedPaths that takes an iterable of sources instead of using a single source
-
-        HashSet<Integer> adjV = new HashSet<Integer>();
-        for (int i : v)
-            adjV.addAll(ancestors[i]);
-
-        HashSet<Integer> adjW = new HashSet<Integer>();
-        for (int i : w)
-            adjW.addAll(ancestors[i]);
-
-        int length = -1;
-
-        for (int i : adjV) {
-            if (adjW.contains(i)) {
-                if (length == -1) length = bfsV.distTo(i) + bfsW.distTo(i);
-                else length = Math.min(bfsV.distTo(i) + bfsW.distTo(i), length);
-            }
-        }
-        return length;
+        return shortest(bfsV, bfsW)[1];
     }
 
     // a common ancestor that participates in shortest ancestral path; -1 if no such path
@@ -168,35 +116,10 @@ public class SAP {
         BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
         BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
 
-        HashSet<Integer> adjV = new HashSet<Integer>();
-        for (int i : v)
-            adjV.addAll(ancestors[i]);
-
-        HashSet<Integer> adjW = new HashSet<Integer>();     // 如果空间不够可以把这个省掉，然后用distTo判断
-        for (int i : w)
-            adjW.addAll(ancestors[i]);
-
-        int length = -1;
-        int ancestor = -1;
-
-
-        for (int i : adjV) {
-            if (adjW.contains(i)) {
-                if (length == -1) {
-                    length = bfsV.distTo(i) + bfsW.distTo(i);
-                    ancestor = i;
-                }
-                else if (bfsV.distTo(i) + bfsW.distTo(i) < length) {
-                    length = bfsV.distTo(i) + bfsW.distTo(i);
-                    ancestor = i;
-                }
-            }
-        }
-        return ancestor;
+        return shortest(bfsV, bfsW)[0];
     }
 
     // do unit testing of this class
     public static void main(String[] args) {
-
-    }
+        
 }
