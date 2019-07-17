@@ -4,7 +4,7 @@
  *  Description:
  *  修改了solution的创建代码。应该用goal.predecessor一路追踪路径，不能记录searchPQ.delMin()
  *  修正了循环条件，测试认为除了阻止重复把predecessor插入minPQ,其他地方不应该用到Board.equals。
- *      原来是比较current与initial是否相等，改为比较current == Null。
+    *  把比较current与initial是否相等，改为current == Null。
  *  修改了compareTo, 如果两个SearchNode.priority相等，比较它们的Manhattan distances。
  **************************************************************************** */
 
