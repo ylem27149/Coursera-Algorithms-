@@ -1,5 +1,9 @@
 # [8-Puzzle](http://coursera.cs.princeton.edu/algs4/assignments/8puzzle.html)  
 
+给出的代码可以100分通过，没有做附加题。
+
+以下为题意分析。
+
 ```
     1  3        1     3        1  2  3        1  2  3        1  2  3    
  4  2  5   =>   4  2  5   =>   4     5   =>   4  5      =>   4  5  6    
