@@ -1,5 +1,7 @@
 # [Week 3 CollinearPoint](http://coursera.cs.princeton.edu/algs4/assignments/collinear.html)
 
+给出的代码可以满分过，没有做附加题
+
 ## 关键点
 
 * 像这种不准用ArrayList，需要自己调整数组大小的，输出数组时需要重新创建一个数组，去掉原数组中多余的空间。  
