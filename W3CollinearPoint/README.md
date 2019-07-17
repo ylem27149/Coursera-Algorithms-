@@ -5,9 +5,11 @@
 ## 关键点
 
 * 像这种不准用ArrayList，需要自己调整数组大小的，输出数组时需要重新创建一个数组，去掉原数组中多余的空间。  
-  *实例变量数组为了不反复Resize，扩大的时候都是直接double的，后面会有不少null元素  
+  * 实例变量数组为了不反复Resize，扩大的时候都是直接double的，后面会有不少null元素  
+  * clone()只能深拷贝一维数组。
+  * 这种 Point[] pointcopy = points; 只是多创建了个指针，并没有创建副本。
   
-* 先用点的大小排序，因为Arrays.sort()所用的归并和插入排序都是稳定的，此后再用斜率排序，点还是会按从大到小排列，能用来过滤重复线段
+* 快速实现中，先用点的大小排序，因为Arrays.sort()所用的归并和插入排序都是稳定的，此后再用斜率排序，点还是会按从大到小排列，能用来过滤重复线段
   
 * 要返回Comparator的变量，定义一个内部类实现Comparator接口 
   * public Comparator<Point> slopeOrder()的写法。[参考](https://stackoverflow.com/questions/39677697/return-a-comparator-from-another-function)：
