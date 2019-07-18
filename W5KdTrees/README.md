@@ -31,7 +31,7 @@ Java中的参数变量都是复制一份值传入方法中。根据参数变量�
     
      private void nearest(double minSquDistance, Node searchNode, Point2D point, char ori,
                          Node minNode) 
-    ```
+```
     
    2. 引用类型
    
@@ -41,7 +41,7 @@ Java中的参数变量都是复制一份值传入方法中。根据参数变量�
    
  例如，如果在nearest()中用Point作为一个参数来记录搜索到的最小点，就无法达到效果。
    
-   ```diff
+```diff
    // 错误例子
    
      private void nearest(double minSquDistance, Node searchNode, Point2D point, char ori,
@@ -50,11 +50,11 @@ if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小
                 minSquDistance = searchNode.point.distanceSquaredTo(point);
 -                minPoint = searchNode.point;
  }
- ```
+```
  
  在最后一行代码中，修改了传入的minPoint指向的对象，这种改变无法在外部调用。
  
- ```diff
+```diff
  //正确例子
   private void nearest(double minSquDistance, Node searchNode, Point2D point, char ori,
                          Node minNode) 
@@ -63,5 +63,5 @@ if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小
                 minSquDistance = searchNode.point.distanceSquaredTo(point);
    +             minNode.point = searchNode.point;
                 }
-   ```
+```
 最后一行代码改变了minNode指向的对象的point值，minNode仍然和传入的变量指向同一个对象。这种改变可以在外部调用。
