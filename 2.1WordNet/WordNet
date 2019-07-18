@@ -1,20 +1,22 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:我太相信使用程序的人的脑洞了……怎么老不记得检测合法性呢
+ *  Description:根据Timeing检测，需要把sap写成实例变量
+ *  参考 https://blog.csdn.net/YunHsiao/article/details/50405328 增加了实例变量nounID 和 nouns，通过增加空间来减少时间
  **************************************************************************** */
 
-import edu.princeton.cs.algs4.BreadthFirstDirectedPaths;
 import edu.princeton.cs.algs4.Digraph;
 import edu.princeton.cs.algs4.In;
-import edu.princeton.cs.algs4.Topological;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class WordNet {
-    private ArrayList<String[]> synArray;
-    private Digraph hypDigraph;
+    private ArrayList<String[]> synArray;       // 通过序号（ArrayList index），检索同义词集合（String[])
+    private HashMap<String, ArrayList<Integer>> nounID;     // 通过名词(String Key),搜索序号
+    private HashSet<String> nouns;      // 所有名词的集合
+    private SAP sap;        // 寻找最近的公共祖先
 
     // constructor takes the name of the two input files
     public WordNet(String synsets, String hypernyms) {
@@ -26,6 +28,9 @@ public class WordNet {
         // read synset
 
         synArray = new ArrayList<String[]>();
+        nounID = new HashMap<String, ArrayList<Integer>>();
+
+        // 创建 synArray
         String aux;
         while (synLine != null) {
             aux = synLine.split(",")[1];    // 同义词集合，每个noun用空格隔开
@@ -38,76 +43,47 @@ public class WordNet {
 
         // 感觉不能直接用文件作参数调用digraph的构造函数=-=，输入文件格式跟那个不同啊。
 
-        hypDigraph = new Digraph(synArray.size());
+        // 创建sap
+        Digraph hypDigraph = new Digraph(synArray.size());
+        // Boolean[] notRoot = new Boolean[synArray.size()];       // boolean的缺省值是flase
         In in2 = new In(hypernyms);
         String hypLine = in2.readLine();
         int ver;        // 每一行的第一个数
         while (hypLine != null) {
             ver = Integer.parseInt(hypLine.split(",")[0]);
+            //  notRoot[ver] = true;
             for (String s : hypLine.split(","))
-                hypDigraph.addEdge(ver, Integer.parseInt(s));
+                if (Integer.parseInt(s) != ver)     // 去掉对本身的Edge添加
+                    hypDigraph.addEdge(ver, Integer.parseInt(s));
             hypLine = in2.readLine();
         }
+        //    int rootNumber = 0;
+        //  for (boolean b : notRoot) {
+        //       if (b == false) rootNumber++;
 
-       
-    }
-    
-    // 话说这个真的要判断吗。写上反而会报错唉。它给的测试文件就不是rootedDAG吧……
-    private void isRootedDAG() {
-        // 思路来源：https://www.coursera.org/learn/algorithms-part2/discussions/weeks/1/threads/zTY0b-amEeaVHA6A58f75A
+        //    }
 
-        Topological top = new Topological(hypDigraph);
-        if (!top.hasOrder()) throw new IllegalArgumentException();
-       
-        int outZeroNumber = 0;
-        int root = -1;
-        for (int i = 0; i < synArray.size(); i++) {
-            if (hypDigraph.outdegree(i) == 0) {
-                outZeroNumber++;
-                root = i;
-            }
-            if (outZeroNumber > 1) throw new IllegalArgumentException();
-        }
-        if (outZeroNumber == 0) throw new IllegalArgumentException();
-        BreadthFirstDirectedPaths bfd = new BreadthFirstDirectedPaths(hypDigraph.reverse(), root);
-        for (int i = 0; i < synArray.size(); i++)
-            if (!bfd.hasPathTo(i)) throw new IllegalArgumentException();
+        //    if (rootNumber == 0 || rootNumber > 1) throw new IllegalArgumentException();
 
-    }
+        sap = new SAP(hypDigraph);
 
-    // returns all WordNet nouns
-    public Iterable<String> nouns() {
-        // Queue<String> nouns = new Queue<String>();
+        // 创建nouns
 
-        // 这个，不会还要去掉重复吧……那用SET吧。应该也不需要顺序，那就hashSet了
+        nouns = new HashSet<String>();
 
-        HashSet<String> nouns = new HashSet<String>();
         for (String[] line : synArray) {
             for (String s : line)
                 nouns.add(s);
-            // 查了一下，这个 Manual array to collection copy 的报错可以用以下语句替换for循环来修正。
-            // nouns.addAll(Arrays.asList(line));
-            // 我还是选择容易理解的for loop吧：）
         }
-        return nouns;
+
+        // 创建nounID
+
+        for (String s : nouns) {
+            nounID.put(s, findSynset(s));
+        }
+
     }
 
-    // is the word a WordNet noun?
-    public boolean isNoun(String word) {
-        if (word == null) throw new IllegalArgumentException();
-        for (String s : nouns())
-            if (s.equals(word)) return true;
-
-        return false;
-    }
-
-    // distance between nounA and nounB (defined below)
-    public int distance(String nounA, String nounB) {
-        if (nounA == null || nounB == null) throw new IllegalArgumentException();
-        if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException();
-        SAP sap = new SAP(hypDigraph);
-        return sap.length(findSynset(nounA), findSynset(nounB));
-    }
 
     private ArrayList<Integer> findSynset(String noun) {
         ArrayList<Integer> synNumber = new ArrayList<Integer>();        // 一个noun可能出现在多行，所以返回了一个集合
@@ -117,15 +93,37 @@ public class WordNet {
         return synNumber;
     }
 
+    // returns all WordNet nouns
+    public Iterable<String> nouns() {
+        // Queue<String> nouns = new Queue<String>();
+
+        return nouns;
+    }
+
+    // is the word a WordNet noun?
+    public boolean isNoun(String word) {
+        if (word == null) throw new IllegalArgumentException();
+        return nouns.contains(word);
+    }
+
+    // distance between nounA and nounB (defined below)
+    public int distance(String nounA, String nounB) {
+        if (nounA == null || nounB == null) throw new IllegalArgumentException();
+        if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException();
+
+        return sap.length(nounID.get(nounA), nounID.get(nounB));
+    }
+
+
     // a synset (second field of synsets.txt) that is the common ancestor of nounA and nounB
     // in a shortest ancestral path (defined below)
     public String sap(String nounA, String nounB) {
         if (nounA == null || nounB == null) throw new IllegalArgumentException();
         if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException();
 
-        SAP sap = new SAP(hypDigraph);
+
         int synNumber = sap
-                .ancestor(findSynset(nounA), findSynset(nounB));     // 目标synset在数组中的索引，即行号
+                .ancestor(nounID.get(nounA), nounID.get(nounB));     // 目标synset在数组中的索引，即行号
 
         StringBuilder ancestor = new StringBuilder();
         for (String s : synArray.get(synNumber))
