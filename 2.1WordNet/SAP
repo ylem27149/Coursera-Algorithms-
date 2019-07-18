@@ -1,13 +1,10 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:尝试了一下把共同部分的代码写在一个函数里，反而通不过Iterable<Integer> v相关的测试了，摸不着头脑。再次回退吧……
+ *  Description:
  **************************************************************************** */
 
-import edu.princeton.cs.algs4.BreadthFirstDirectedPaths;
 import edu.princeton.cs.algs4.Digraph;
-import edu.princeton.cs.algs4.In;
-import edu.princeton.cs.algs4.StdOut;
 
 public class SAP {
 
@@ -35,46 +32,49 @@ public class SAP {
     public int length(int v, int w) {
         cornerTest(v);
         cornerTest(w);
+        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
+        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
+        // if (bfsW.hasPathTo(v)) return bfsW.distTo(v);
 
-        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
-        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
+        //其实这两句的逻辑完全可以放到下面的循环里不用单独写嗯。
 
-        return shortest(bfsV, bfsW)[0];
+        int length = -1;
+
+        for (int i = 0; i < digraph.V(); i++)
+
+        // 如果用我上一版的那种借助adj的思路，倒是不用扫描全部节点，不过写起来很绕。算了
+        {
+            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+                if (length == -1) length = bfsV.distTo(i) + bfsW.distTo(i);
+                else length = Math.min(bfsV.distTo(i) + bfsW.distTo(i), length);
+            }
+        }
+        return length;
     }
 
     // a common ancestor of v and w that participates in a shortest ancestral path; -1 if no such path
     public int ancestor(int v, int w) {
         cornerTest(v);
         cornerTest(w);
-        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
-        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
+        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
+        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
 
-        return shortest(bfsV, bfsW)[1];
-    }
-
-    private int[] shortest(BreadthFirstDirectedPaths bfsV, BreadthFirstDirectedPaths bfsW)
-
-    // 计算公共祖先和最短距离的复用代码
-    {
-
-        int[] shortest = { -1, -1 };       // 第一个元素存储最短距离，第二个元素存储公共祖先
-
+        int length = -1;
+        int ancestor = -1;
 
         for (int i = 0; i < digraph.V(); i++) {
             if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
-                if (shortest[0] == -1) {
-                    shortest[0] = bfsV.distTo(i) + bfsW.distTo(i);
-                    shortest[1] = i;
+                if (length == -1) {
+                    length = bfsV.distTo(i) + bfsW.distTo(i);
+                    ancestor = i;
                 }
-                else if (bfsV.distTo(i) + bfsW.distTo(i) < shortest[0]) {
-                    shortest[0] = bfsV.distTo(i) + bfsW.distTo(i);
-                    shortest[1] = i;
+                else if (bfsV.distTo(i) + bfsW.distTo(i) < length) {
+                    length = bfsV.distTo(i) + bfsW.distTo(i);
+                    ancestor = i;
                 }
             }
         }
-
-        return shortest;
-
+        return ancestor;
     }
 
     // length of shortest ancestral path between any vertex in v and any vertex in w; -1 if no such path
@@ -92,10 +92,25 @@ public class SAP {
             cornerTest(i);
         }
 
-        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
-        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
+        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
+        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
 
-        return shortest(bfsV, bfsW)[1];
+        // To improve the method length(Iterable<Integer> v, Iterable<Integer> w)  time-taking proportional to  E + V?,
+        // The key is using the constructor in BreadthFirstDirectedPaths that takes an iterable of sources instead of using a single source
+        // 大概感觉了一下，应该直接copy上面的就行吧……
+
+        int length = -1;
+
+        for (int i = 0; i < digraph.V(); i++)
+
+        // 如果用我上一版的那种借助adj的思路，倒是不用扫描全部节点，不过写起来很绕。算了
+        {
+            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+                if (length == -1) length = bfsV.distTo(i) + bfsW.distTo(i);
+                else length = Math.min(bfsV.distTo(i) + bfsW.distTo(i), length);
+            }
+        }
+        return length;
     }
 
     // a common ancestor that participates in shortest ancestral path; -1 if no such path
@@ -113,13 +128,28 @@ public class SAP {
             cornerTest(i);
         }
 
-        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
-        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
+        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
+        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
+        int length = -1;
+        int ancestor = -1;
 
-        return shortest(bfsV, bfsW)[0];
+        for (int i = 0; i < digraph.V(); i++) {
+            if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) {
+                if (length == -1) {
+                    length = bfsV.distTo(i) + bfsW.distTo(i);
+                    ancestor = i;
+                }
+                else if (bfsV.distTo(i) + bfsW.distTo(i) < length) {
+                    length = bfsV.distTo(i) + bfsW.distTo(i);
+                    ancestor = i;
+                }
+            }
+        }
+        return ancestor;
     }
 
     // do unit testing of this class
     public static void main(String[] args) {
-        
+
+    }
 }
