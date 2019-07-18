@@ -121,3 +121,18 @@ Can I put the logic for detecting whether a puzzle is infeasible in Board instea
  5. Use only one PQ to run the A* algorithm on the initial board and its twin  
  6. Exploit the fact that the difference in Manhattan distance between a board and a neighbor is either −1 or +1.
  
+ #### 参考资料
+ 
+ * https://blog.csdn.net/u011256637/article/details/52550570   
+ 这个没写可解性判断的代码。  
+ * https://blog.csdn.net/qq_29672495/article/details/81297748  
+这份是在solver构造函数中就放进twinboard，然后两个同步跑，等其中一个跑出结果就结束循环。  
+用currentNode.getBoard().isGoal()来判断是否可解。因为构造函数总是先运行的，调用isSolverable的时候，currentNode肯定已经跑出以下while循环了。currentNode要么是最后一个结点（所以它的move就是总move）要么就不可解。  
+这份的存储没达标  
+* https://github.com/zysite/Algorithms  
+这份是满分过的。  
+* https://blog.csdn.net/zhangyuzuishuai/article/details/68167420  
+    * 这份把两个插入了同一个minPQ，在Node里加了一个boolean来判断是初始序列还是twin。
+    * 实现的时候有一个提醒，那就是不要把优先队列作为成员变量（实力变量），否则内存使用会爆炸  
+    * 还有用一维数组代替二维数组也会改善空间的使用。
+ 
