@@ -126,9 +126,9 @@ Can I put the logic for detecting whether a puzzle is infeasible in Board instea
  * https://blog.csdn.net/u011256637/article/details/52550570   
  这个没写可解性判断的代码。  
  * https://blog.csdn.net/qq_29672495/article/details/81297748  
-这份是在solver构造函数中就放进twinboard，然后两个同步跑，等其中一个跑出结果就结束循环。  
-用currentNode.getBoard().isGoal()来判断是否可解。因为构造函数总是先运行的，调用isSolverable的时候，currentNode肯定已经跑出以下while循环了。currentNode要么是最后一个结点（所以它的move就是总move）要么就不可解。  
-这份的存储没达标  
+    * 这份是在solver构造函数中就放进twinboard，然后两个同步跑，等其中一个跑出结果就结束循环。  
+    * 用currentNode.getBoard().isGoal()来判断是否可解。因为构造函数总是先运行的，调用isSolverable的时候，currentNode肯定已经跑出以下while循环了。currentNode要么是最后一个结点（所以它的move就是总move）要么就不可解。  
+    * 这份的存储没达标  
 * https://github.com/zysite/Algorithms  
 这份是满分过的。  
 * https://blog.csdn.net/zhangyuzuishuai/article/details/68167420  
