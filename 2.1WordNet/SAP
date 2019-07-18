@@ -1,9 +1,10 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description:头秃了好几天，搞了好几版负优化，结果并不是这部分的问题orz
  **************************************************************************** */
 
+import edu.princeton.cs.algs4.BreadthFirstDirectedPaths;
 import edu.princeton.cs.algs4.Digraph;
 
 public class SAP {
@@ -12,6 +13,7 @@ public class SAP {
 
     // constructor takes a digraph (not necessarily a DAG)
     public SAP(Digraph G) {
+        if (G == null) throw new IllegalArgumentException();
         digraph = new Digraph(G);
 
         // How can I make the data type SAP immutable? You can (and should) save the associated digraph in an instance variable.
@@ -32,8 +34,12 @@ public class SAP {
     public int length(int v, int w) {
         cornerTest(v);
         cornerTest(w);
-        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
-        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
+        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
+        // if (bfsV.hasPathTo(w)) return bfsV.distTo(w);
+        // a vertex is considered an ancestor of itself.
+        // 如果两节点直接可达，那么它们之间的距离就是最短公共距离
+
+        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
         // if (bfsW.hasPathTo(v)) return bfsW.distTo(v);
 
         //其实这两句的逻辑完全可以放到下面的循环里不用单独写嗯。
@@ -56,8 +62,8 @@ public class SAP {
     public int ancestor(int v, int w) {
         cornerTest(v);
         cornerTest(w);
-        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
-        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
+        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
+        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
 
         int length = -1;
         int ancestor = -1;
@@ -92,8 +98,8 @@ public class SAP {
             cornerTest(i);
         }
 
-        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
-        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
+        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
+        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
 
         // To improve the method length(Iterable<Integer> v, Iterable<Integer> w)  time-taking proportional to  E + V?,
         // The key is using the constructor in BreadthFirstDirectedPaths that takes an iterable of sources instead of using a single source
@@ -128,8 +134,8 @@ public class SAP {
             cornerTest(i);
         }
 
-        DeluxeBFS bfsV = new DeluxeBFS(digraph, v);
-        DeluxeBFS bfsW = new DeluxeBFS(digraph, w);
+        BreadthFirstDirectedPaths bfsV = new BreadthFirstDirectedPaths(digraph, v);
+        BreadthFirstDirectedPaths bfsW = new BreadthFirstDirectedPaths(digraph, w);
         int length = -1;
         int ancestor = -1;
 
