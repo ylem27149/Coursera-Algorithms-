@@ -2,20 +2,21 @@
  *  Name:
  *  Date:
  *  Description:根据Timeing检测，需要把sap写成实例变量
- *  参考 https://blog.csdn.net/YunHsiao/article/details/50405328 增加了实例变量nounID 和 nouns，通过增加空间来减少时间
+ *  把以词求号的数据类型修改为HashMap
+ *  重新添加图的有效性检测
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Digraph;
+import edu.princeton.cs.algs4.DirectedCycle;
 import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class WordNet {
-    private ArrayList<String[]> synArray;       // 通过序号（ArrayList index），检索同义词集合（String[])
+    private HashMap<Integer, String[]> synsetMap;       // 序号与对应同义词的组合
     private HashMap<String, ArrayList<Integer>> nounID;     // 通过名词(String Key),搜索序号
-    private HashSet<String> nouns;      // 所有名词的集合
     private SAP sap;        // 寻找最近的公共祖先
 
     // constructor takes the name of the two input files
@@ -27,14 +28,17 @@ public class WordNet {
         String synLine = in1.readLine();
         // read synset
 
-        synArray = new ArrayList<String[]>();
+        synsetMap = new HashMap<Integer, String[]>();
         nounID = new HashMap<String, ArrayList<Integer>>();
 
-        // 创建 synArray
+        // 创建 synetMap
         String aux;
+        int number;
         while (synLine != null) {
+            number = Integer.parseInt(synLine.split(",")[0]);   // 该行同义词集的序号
             aux = synLine.split(",")[1];    // 同义词集合，每个noun用空格隔开
-            synArray.add(aux.split(" "));       // synArray的每一个元素都是某行所有同义词的String数组（可以指向不同大小的数组呀？）
+            synsetMap.put(number,
+                          aux.split(" "));      // synArray的每一个元素都是某行所有同义词的String数组
             synLine = in1.readLine();     // 如果到底了，是会被赋值null的吧……？
 
         }
@@ -44,66 +48,65 @@ public class WordNet {
         // 感觉不能直接用文件作参数调用digraph的构造函数=-=，输入文件格式跟那个不同啊。
 
         // 创建sap
-        Digraph hypDigraph = new Digraph(synArray.size());
-        // Boolean[] notRoot = new Boolean[synArray.size()];       // boolean的缺省值是flase
+        Digraph hypDigraph = new Digraph(synsetMap.size());
+
+        boolean[] notRoot = new boolean[synsetMap.size()];       // boolean的缺省值是flase
         In in2 = new In(hypernyms);
         String hypLine = in2.readLine();
         int ver;        // 每一行的第一个数
         while (hypLine != null) {
             ver = Integer.parseInt(hypLine.split(",")[0]);
-            //  notRoot[ver] = true;
+            notRoot[ver] = true;
             for (String s : hypLine.split(","))
                 if (Integer.parseInt(s) != ver)     // 去掉对本身的Edge添加
                     hypDigraph.addEdge(ver, Integer.parseInt(s));
             hypLine = in2.readLine();
         }
-        //    int rootNumber = 0;
-        //  for (boolean b : notRoot) {
-        //       if (b == false) rootNumber++;
-
-        //    }
-
-        //    if (rootNumber == 0 || rootNumber > 1) throw new IllegalArgumentException();
 
         sap = new SAP(hypDigraph);
 
-        // 创建nouns
+        DirectedCycle directedCycle = new DirectedCycle(hypDigraph);
+        if (directedCycle.hasCycle())
+            throw new IllegalArgumentException("the graph has cycle");
 
-        nouns = new HashSet<String>();
 
-        for (String[] line : synArray) {
-            for (String s : line)
-                nouns.add(s);
+        int rootNumber = 0;
+        for (boolean b : notRoot) {
+            if (!b)
+                rootNumber++;
         }
+
+        if (rootNumber > 1) throw new IllegalArgumentException();
+
 
         // 创建nounID
 
-        for (String s : nouns) {
-            nounID.put(s, findSynset(s));
+        nounID = new HashMap<String, ArrayList<Integer>>();
+
+        for (int i = 0; i < synsetMap.size(); i++) {
+            for (String noun : synsetMap.get(i)) {
+                if (!nounID.containsKey(noun)) {
+                    ArrayList<Integer> index = new ArrayList<Integer>();
+                    index.add(i);
+                    nounID.put(noun, index);
+                }
+                else nounID.get(noun).add(i);
+            }
         }
 
+
     }
 
-
-    private ArrayList<Integer> findSynset(String noun) {
-        ArrayList<Integer> synNumber = new ArrayList<Integer>();        // 一个noun可能出现在多行，所以返回了一个集合
-        for (String[] line : synArray)
-            for (String s : line)
-                if (s.equals(noun)) synNumber.add(synArray.indexOf(line));
-        return synNumber;
-    }
 
     // returns all WordNet nouns
     public Iterable<String> nouns() {
-        // Queue<String> nouns = new Queue<String>();
-
-        return nouns;
+        return nounID.keySet();
     }
 
     // is the word a WordNet noun?
     public boolean isNoun(String word) {
         if (word == null) throw new IllegalArgumentException();
-        return nouns.contains(word);
+        return nounID.containsKey(word);
     }
 
     // distance between nounA and nounB (defined below)
@@ -126,7 +129,7 @@ public class WordNet {
                 .ancestor(nounID.get(nounA), nounID.get(nounB));     // 目标synset在数组中的索引，即行号
 
         StringBuilder ancestor = new StringBuilder();
-        for (String s : synArray.get(synNumber))
+        for (String s : synsetMap.get(synNumber))
             ancestor.append(s + " ");
         // ancestor = ancestor + " " + s;
         // Builds a 'String' object using the '+' operator in a loop, which can take time quadratic in the length of the resulting string.
@@ -138,6 +141,12 @@ public class WordNet {
 
     // do unit testing of this class
     public static void main(String[] args) {
-
+        WordNet wordnet = new WordNet(args[0], args[1]);
+        Outcast outcast = new Outcast(wordnet);
+        for (int t = 2; t < args.length; t++) {
+            In in = new In(args[t]);
+            String[] nouns = in.readAllStrings();
+            StdOut.println(args[t] + ": " + outcast.outcast(nouns));
+        }
     }
 }
