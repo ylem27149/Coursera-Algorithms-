@@ -1,6 +1,6 @@
 # [Week 5 KdTrees](https://www.coursera.org/learn/algorithms-part1/programming/wuF0a/kd-trees)
 
-* 参数变量的值传递
+## 参数变量的值传递
 
 Java中的参数变量都是复制一份值传入方法中。根据参数变量是原始类型、还是引用类型，又可以分成两种情况：
 
@@ -61,7 +61,7 @@ if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小
                          
   if (searchNode.point.distanceSquaredTo(point) < minSquDistance) { //更新最小距离
                 minSquDistance = searchNode.point.distanceSquaredTo(point);
-   +             minNode.point = searchNode.point;
++               minNode.point = searchNode.point;
                 }
 ```
 最后一行代码改变了minNode指向的对象的point值，minNode仍然和传入的变量指向同一个对象。这种改变可以在外部调用。
