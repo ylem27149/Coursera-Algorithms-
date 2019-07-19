@@ -64,11 +64,7 @@ synsetMap.put(number, aux.split(" "));
 * How to make  the length(Iterable<Integer> v, Iterable<Integer> w) method taking time proportional to E + V?   
   * The key is using the **constructor** in BreadthFirstDirectedPaths that **takes an iterable of sources** instead of using a single source.
   
-***
-
 - [ ] 有个问题。在 Jul 14, 2019 提交的版本中，把四个计算的共同部分写成private int[] shortest(BreadthFirstDirectedPaths bfsV, BreadthFirstDirectedPaths bfsW)，返回的int数组中一个是公共祖先，一个是最小距离。这样 Test 16: check length() and ancestor() with iterable arguments 也就是 Iterable<Integer> 的测试过不去。为什么呢？单参数和迭代集合，传入传出的数据类型不都一样的，还是bfs吗？
-
-***
 
 ### 参数合法性检测
 
