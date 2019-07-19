@@ -100,16 +100,21 @@ API中,distance 和 sap 需要：
 
 ### 输入数据的存储
 
-* hypernyms，如上所述，存储为Diagraph。  
-* synset中，按行读取数据，容易想到应该用一个 <行号,同义词集> 对应的数据结构（以号求词）。API中会用到单个的noun,所以一行中的同义词应该一个一个分开存储，即```<int,String[]>```形式。  
+1. hypernyms，如上所述，存储为Diagraph。  
+2. synset中，按行读取数据，容易想到应该用一个 <行号,同义词集> 对应的数据结构（以号求词）。API中会用到单个的noun,所以一行中的同义词应该一个一个分开存储，即```<int,String[]>```形式。  
   * 最开始我用了二维数组 ```private ArrayList<String[]> synArray```，但是 Test 4: check sap() with random noun pairs 会出现 WARNING: the time limit of 180 seconds was exceeded, so not all tests could be completed.
   * 后来改成了 ```HashMap<Integer, String[]> synsetMap``` 就过了。
   * 就像上面说的，sap( )还需要进行 以号求词，而 HashMap的检索速度会更快。
-  * 另外，如果不存储 以词求号 的数据结构，在 Test 1: check distance() with random noun pairs= 就会超时挂掉。
-  
+ 
+3. 根据上一个数据类型，存储 以词求号 的 HashMap<String, ArrayList<Integer>>。  
+  如果不存这个，在 Test 1: check distance() with random noun pairs 时就会超时挂掉：WARNING: the time limit of 180 seconds was exceeded, so not all tests could be completed.   
+  另外，还可以通过调用 HashMap 的 keySet() 方法，返回所有noun的集合。（API ``` public Iterable<String> nouns() ```)
+
+4. SAP。过Timeing检测需要把sap写成实例变量。
+ 
 - [ ] *这么说起来，我都是随便写一份，然后依靠测试系统的反馈修改。实际上应该按照题目的时间空间要求，先确定算法的性能再下笔的……* 
 
-## WordNet中图的合法性检测
+### WordNet中图的合法性检测
 
 要求WordNet中创建的Diagraph应该是一个rooted DAG。可以分成两部分来考虑：
 
@@ -121,4 +126,10 @@ API中,distance 和 sap 需要：
 2. DAG 无环有向图
   可以用 DirectedCycle 的hasCycle()，或者 [Topological](https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/Topological.html#hasOrder()) 的 hasOrder() 检测
 
- 
+## Outcast
+
+outcast就很简单啦。就是注意在每次计算到一个词的总距离时，要在循环中先把distance置零，然后在计算这个词跟其他词的距离。
+
+## 参考资料
+
+http://www.shicheng0829.cn/index.php/2018/10/25/%E3%80%90algorithms-part-ii%E3%80%91week1-wordnet/
