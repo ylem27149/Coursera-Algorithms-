@@ -8,9 +8,9 @@
 
 ```行号,noun1 noun2,释义```
 
-一行中会有不止一个单词（noun），同一个单词也会出现在不同行。
+一行中会有不止一个单词（noun），同一个单词也会出现在不同行。释义不需要存储。
 
-读取的时候，使用In库的实例方法readLine()
+读取的时候，使用In库的实例方法readLine( )
 
 ```java
 // 实例方法，需要用变量调用。
@@ -19,8 +19,8 @@ String synLine = in1.readLine();
 
 ```
 
-然后借助split(",")分离出行号和同义词们。split()方法返回的是String[]。  
-行号要用静态方法Integer.parseInt()实现从String向int的转换，同义词之间是用空格分离。
+然后借助split(",")分离出行号和同义词们。split( )方法返回的是String[ ]。  
+行号要用静态方法Integer.parseInt( )实现从String向int的转换，同义词之间是用空格分离。
 
 ```java
 number = Integer.parseInt(synLine.split(",")[0]);   // 该行同义词集的序号
@@ -28,7 +28,7 @@ aux = synLine.split(",")[1];    // 同义词集合，每个noun用空格隔开
 synsetMap.put(number, aux.split(" "));     
 ```
 
-然后不断向下读取，当到达文件尾，readLine()会返回null，以此作为循环条件。
+然后不断向下读取，当到达文件尾，readLine( )会返回null，以此作为循环条件。
 
 ### hypernyms
 
@@ -40,17 +40,18 @@ synsetMap.put(number, aux.split(" "));
 
 ## SAP：Shortest ancestral path
 
-## SAP寻找算法
+### SAP寻找算法
 
-第一版被示意图影响，只考虑了单父节点的简单情况，借助Diagraph的adj[]实现遍历。
+第一版被示意图影响，只考虑了单父节点的简单情况，借助Diagraph的adj[ ]实现遍历。
 
 但是实际上WordNet中的一个词可以有多个父节点，应该借助[BreadthFirstDirectedPaths](https://algs4.cs.princeton.edu/42digraph/BreadthFirstDirectedPaths.java.html)实现最小公共祖先的寻找。
 
-有向图的v -> w （v has path to w) 代表 WordNet中 w 是 v 的父节点。所以可以用```if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) ``` 来寻找common ancestor。
+有向图的v -> w （v has path to w) 代表 WordNet中 w 是 v 的父节点。所以可以用  
+```if (bfsV.hasPathTo(i) && bfsW.hasPathTo(i)) ``` 来寻找common ancestor。
 
 在有多条路径的情况下，bfs.disto会返回最短路径。WordNet中节点可以视作它自身的ancestor，bfs中的每个点也总是可以到达它自己，所以这种情况不用特殊处理。
 
-*尝试过用借助Diagraph的adj[]，只检索两个节点的所有上位词而不是所有的词条，会提示 ```Number of primitive operations in Digraph exceeds limit``` ,最终还是就简单的遍历所有同义词集。*
+尝试过用借助Diagraph的adj[ ]，只检索两个节点的所有上位词而不是所有的词条，会提示 *Number of primitive operations in Digraph exceeds limit* ,最终还是遍历所有同义词集。
 
 ***
 
@@ -65,7 +66,7 @@ synsetMap.put(number, aux.split(" "));
   
 ***
 
-- [ ] 有个问题。在 Jul 14, 2019 提交的版本中，把四个计算的共同部分写成 ```private int[] shortest(BreadthFirstDirectedPaths bfsV, BreadthFirstDirectedPaths bfsW)``` ，返回的int数组中一个是公共祖先，一个是最小距离。这样```Test 16: check length() and ancestor() with iterable arguments```也就是 ```Iterable<Integer>``` 的测试过不去。为什么呢？单参数和迭代集合，传入传出的数据类型不都一样的，还是bfs吗？
+- [ ] 有个问题。在 Jul 14, 2019 提交的版本中，把四个计算的共同部分写成private int[] shortest(BreadthFirstDirectedPaths bfsV, BreadthFirstDirectedPaths bfsW)，返回的int数组中一个是公共祖先，一个是最小距离。这样 Test 16: check length() and ancestor() with iterable arguments 也就是 Iterable<Integer> 的测试过不去。为什么呢？单参数和迭代集合，传入传出的数据类型不都一样的，还是bfs吗？
 
 ***
 
@@ -97,18 +98,18 @@ public class WordNet {
 
 API中,distance 和 sap 需要：
 
-1. 搜索到输入的noun在synsets中的序号（**以词求号**）。因为同一个词可能会出现在不止一行，即一个词可能会有多个释义，所以这个序号也可能不止一个。也就是一个存储成对的 ```<String，int[]>``` 的数据结构。（实际上用的是 ```HashMap<String, ArrayList<Integer>>```）
-2. 根据nounA和nounB 对应的序号，用SAP搜索最短路径或最小公共祖先。如果之前找到的序号不止一个，就会调用参数为```Iterable<Integer>```的SAP方法
-3. sap()还需要把SAP数据结构返回的数字转换成对应的同义词集（**以号求词**）
+1. 搜索到输入的noun在synsets中的序号（**以词求号**）。因为同一个词可能会出现在不止一行，即一个词可能会有多个释义，所以这个序号也可能不止一个。也就是一个存储成对的 <String，int[ ]> 的数据结构。（实际上用的是 ```HashMap<String, ArrayList<Integer>>```）
+2. 根据nounA和nounB 对应的序号，用SAP搜索最短路径或最小公共祖先。如果之前找到的序号不止一个，就会调用参数为 Iterable<Integer> 的SAP方法
+3. sap( )还需要把SAP数据结构返回的数字转换成对应的同义词集（**以号求词**）
 
 ### 输入数据的存储
 
 * hypernyms，如上所述，存储为Diagraph。  
-* synset中，按行读取数据，容易想到应该用一个```<行号,同义词集>```对应的数据结构（以号求词）。API中会用到单个的noun,所以一行中的同义词应该一个一个分开存储，即```<int,String[]>```形式。  
-  * 最开始我用了二维数组 ```private ArrayList<String[]> synArray```，但是```Test 4: check sap() with random noun pairs``` 会出现 ```WARNING: the time limit of 180 seconds was exceeded, so not all tests could be completed.```
+* synset中，按行读取数据，容易想到应该用一个 <行号,同义词集> 对应的数据结构（以号求词）。API中会用到单个的noun,所以一行中的同义词应该一个一个分开存储，即```<int,String[]>```形式。  
+  * 最开始我用了二维数组 ```private ArrayList<String[]> synArray```，但是 Test 4: check sap() with random noun pairs 会出现 WARNING: the time limit of 180 seconds was exceeded, so not all tests could be completed.
   * 后来改成了 ```HashMap<Integer, String[]> synsetMap``` 就过了。
-  * 就像上面说的，sap()还需要进行 以号求词，而 HashMap的检索速度会更快。
-  * 另外，如果不存 以词求号 的数据结构，在 ```Test 1: check distance() with random noun pairs```就会超时挂掉。
+  * 就像上面说的，sap( )还需要进行 以号求词，而 HashMap的检索速度会更快。
+  * 另外，如果不存储 以词求号 的数据结构，在 Test 1: check distance() with random noun pairs= 就会超时挂掉。
   
 - [ ] *这么说起来，我都是随便写一份，然后依靠测试系统的反馈修改。实际上应该按照题目的时间空间要求，先确定算法的性能再下笔的……* 
 
@@ -117,7 +118,7 @@ API中,distance 和 sap 需要：
 要求WordNet中创建的Diagraph应该是一个rooted DAG。可以分成两部分来考虑：
 
 1. rooted：根节点并不会指向其他节点。  
-  可以在读取 hypernyms 的时候用boolean[]记录下其中都出现了哪些行（每行的第一个数都有上位词，不会是根）。  
+  可以在读取 hypernyms 的时候用boolean[ ]记录下其中都出现了哪些行（每行的第一个数都有上位词，不会是根）。  
   如果根节点的数量超过一个，就是非法的。
   - [ ] 很奇怪的，不能在根节点数量 = 0 的时候报错，这会导致前面的题目过不去。我觉得这种情况就相当于有环……？
 
