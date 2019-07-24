@@ -1,9 +1,9 @@
-/* ***********************/* *****************************************************************************
+/* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:把实例变量Picture改成存储颜色的int[][]，memory test过了。91->93
- *  加energy的时候，transponse要把energy也转一下。并且不能再完成energy的旋转前改变picRGB，会影响width()和height()的输出
- *  不行，加上energy[][]会在循环调用中出错，懒得搞了，删掉删掉。
+ *  Description:
+ *  注意，删除后energy数组并不是直接复制，seam附近的点要重新计算energy值！
+ *  另外，在energy计算中引入位操作，并不会提高时间空间上的表现。（但是现在调用color次数超了。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Picture;
@@ -25,7 +25,7 @@ public class SeamCarver {
             for (int row = 0; row < height(); row++)
                 picRGB[row][col] = picture.getRGB(col, row);
 
-        energy = new double[picture.height()][picture.width()];
+        energy = new double[height()][width()];
 
         for (int col = 0; col < width(); col++)
             for (int row = 0; row < height(); row++)
@@ -119,6 +119,7 @@ public class SeamCarver {
         // We want to find the shortest path from any of the W pixels in the top row to any of the W pixels in the bottom row.
         int[] shortestPath = new int[height()]; // 存储最短路径的x坐标
         double minEnergy = Double.POSITIVE_INFINITY;
+
 
         // When finding a seam, call energy() at most once per pixel. For example, you can save the energies in a local variable energy[][]
         // and access the information directly from the 2D array (instead of recomputing from scratch).
@@ -228,7 +229,6 @@ public class SeamCarver {
         seamTest(seam, height(), width());
         if (width() <= 1) throw new IllegalArgumentException();
 
-        //     double[][] energyNew = new double[width() - 1][height()];
 
         int[][] pic = new int[height()][width() - 1];
         double[][] ene = new double[height()][width() - 1];
@@ -242,6 +242,20 @@ public class SeamCarver {
         }
 
         picRGB = pic;
+
+        for (int row = 0; row < height(); row++)
+            for (int col = 0; col < width(); col++) {
+                //   if (row == 0 || row == height() - 1 || col == 0 || col == width() - 2)
+                //        ene[row][col] = 1000;
+                if (seam[row] - col <= 1)
+                    ene[row][col] = energy(col,
+                                           row);       // 因为要调用energy()，所以需要在上面先改掉实例变量。然后width()也改变了
+                //     if ((row < height() - 1 && seam[row + 1] == col) || (row > 0
+                //            && seam[row - 1] == col)
+                //     ene[row][col] = energy(col, row);
+                // 因为seam上下行只能相隔一个身位，这个判断是多余的。
+            }
+
         energy = ene;
 
 
@@ -258,254 +272,5 @@ public class SeamCarver {
         //   StdOut.print(i + ", ");
         //    seamCarver.removeVerticalSeam(solution);
         seamCarver.removeHorizontalSeam(hor);
-    }
-}
-******************************************************
- *  Name:
- *  Date:
- *  Description:seam的合法性检测，应该需要两个int参数
- **************************************************************************** */
-
-import edu.princeton.cs.algs4.Picture;
-import edu.princeton.cs.algs4.StdOut;
-
-import java.awt.Color;
-
-public class SeamCarver {
-    private Picture picture;
-    //    private double[][] energy;
-
-    // create a seam carver object based on the given picture
-    public SeamCarver(Picture picture) {
-
-        if (picture == null) throw new IllegalArgumentException();
-        this.picture = new Picture(picture);
-
-    }
-
-    // current picture
-    public Picture picture() {
-        return new Picture(picture);
-
-
-    }
-
-    // A data type should not have side effects (unless they are specified in the API).
-    // It should behave properly as prescribed even if the client mutates the Picture object passed to the constructor or returned from the picture() method.
-    // As a result, you might need to make defensive copies of any Picture objects that you either take as input or return as output.
-
-    // width of current picture
-    public int width() {
-        return picture.width();
-    }
-
-    // height of current picture
-    public int height() {
-        return picture.height();
-    }
-
-    // energy of pixel at column x and row y
-    public double energy(int x, int y) {
-
-        if (x < 0 || x >= width() || y < 0 || y >= height()) throw new IllegalArgumentException();
-
-        if (x == 0 || x == width() - 1 || y == 0 || y == height() - 1) return 1000;
-        //边界上的点， return 1000;
-
-        Color xColor1 = picture.get(x - 1, y);
-        Color xColor2 = picture.get(x + 1, y);
-        double xGradient = Math.pow(xColor1.getRed() - xColor2.getRed(), 2) + Math
-                .pow(xColor1.getGreen() - xColor2.getGreen(), 2) + Math
-                .pow(xColor1.getBlue() - xColor2.getBlue(),
-                     2);     // 乘方 Math.pow(a,b), a 的 b次方。虽然我知道右边其实是个int, 但是pow返回的就是double,所以左边只能用double了
-
-        Color yColor1 = picture.get(x, y - 1);
-        Color yColor2 = picture.get(x, y + 1);
-        double yGradient = Math.pow(yColor1.getRed() - yColor2.getRed(), 2) + Math
-                .pow(yColor1.getGreen() - yColor2.getGreen(), 2) + Math
-                .pow(yColor1.getBlue() - yColor2.getBlue(), 2);
-
-        return Math.sqrt(xGradient + yGradient);
-    }
-
-    // sequence of indices for horizontal seam
-    public int[] findHorizontalSeam() {
-
-        transpose();
-        int[] minPath = findVerticalSeam();
-        transpose();
-        return minPath;
-
-    }
-    // The order in which you traverse the pixels (row-major order vs. column-major order) can make a big difference.
-    // 意思应该是，先写Vertical, Horizontal 是反转后调用Vertical吧？
-
-    private void transpose() {
-        if (picture == null) throw new IllegalArgumentException();
-
-        Picture tranPic = new Picture(picture.height(), picture.width());
-
-        for (int x = 0; x < picture.height(); x++)
-            for (int y = 0; y < picture.width(); y++)
-                tranPic.setRGB(x, y, picture.getRGB(y, x));
-
-        picture = tranPic;
-    }
-
-    // sequence of indices for vertical seam
-    public int[] findVerticalSeam() {
-
-        // We want to find the shortest path from any of the W pixels in the top row to any of the W pixels in the bottom row.
-        int[] shortestPath = new int[height()]; // 存储最短路径的y坐标
-        double minEnergy = Double.POSITIVE_INFINITY;
-
-        double[][] energy = new double[width()][height()];
-        for (int i = 0; i < width(); i++)
-            for (int j = 0; j < height(); j++)
-                energy[i][j] = energy(i, j);
-
-
-        // When finding a seam, call energy() at most once per pixel. For example, you can save the energies in a local variable energy[][]
-        // and access the information directly from the 2D array (instead of recomputing from scratch).
-
-        // Don’t use an explicit EdgeWeightedDigraph. Instead, execute the topological sort algorithm directly on the pixels.
-
-
-        for (int x = 0; x < width(); x++) {
-            // for 第一排的点，从左向右分别作为起点开始搜索最短路径
-
-            // distTo,EdgeTo 也写成二维数组吧。distTo是double，到达该点的最小距离。EdgeTo是指向该点的最近点，存x就行，y就是当前行号-1。
-            double[][] distTo = new double[width()][height()];
-
-            for (int i = 0; i < width(); i++)
-                for (int j = 0; j < height(); j++)
-                    distTo[i][j] = Double.POSITIVE_INFINITY;        // distTo 初始化
-
-            // Double.POSITIVE_INFINITY
-            // MIN_VALUE
-
-            distTo[x][0] = energy[x][0];    // 本轮搜索的起点（x，0）
-
-
-            int[][] edgeTo = new int[width()][height()];        // 这个第一行没有初始化哦！
-            // 不同第一行的distTo应该，可能会互相影响，还是新建一下吧
-            // 然后找到了再存一下，if更小的话进行更新。
-
-            //  寻找（x,0)到底边的最短距离
-            for (int y = 0; y < height() - 1; y++) {
-                for (int searchX = 0; searchX < width(); searchX++)
-                    // 搜索y行中所有已经更新过distTo的点,也就是从起点到结尾所有的可达点。点的坐标为(searchX,y)。
-
-                    if (distTo[searchX][y] != Double.POSITIVE_INFINITY) {
-                        // 向下搜索
-                        relax(searchX, y, searchX, distTo, edgeTo, energy[searchX][y + 1]);
-                        if (searchX > 0) relax(searchX, y, searchX - 1, distTo, edgeTo,
-                                               energy[searchX - 1][y + 1]);
-                        if (searchX < width() - 1)
-                            relax(searchX, y, searchX + 1, distTo, edgeTo,
-                                  energy[searchX + 1][y + 1]);
-                        // The digraph is acyclic, where there is a downward edge from pixel (x, y) to pixels
-                        // (x − 1, y + 1), (x, y + 1), and (x + 1, y + 1), assuming that the coordinates are in the prescribed range.
-                    }
-            }
-            int bottomMin = -1;      // 最后一行中，distTo最小的点的x坐标
-            for (int i = 0; i < width(); i++)
-                if (distTo[i][height() - 1] < minEnergy) {
-                    bottomMin = i;
-                    minEnergy = distTo[i][height() - 1];
-                }
-            // 如果minEnergy被更新了，就更新shorestPath。
-            if (bottomMin != -1) {
-                int minX = bottomMin;
-                for (int i = 0; i < height(); i++) {
-                    shortestPath[height() - 1 - i] = minX;
-                    minX = edgeTo[minX][height() - 1 - i];
-                }
-            }
-        }
-
-        return shortestPath;
-
-    }
-
-    private void relax(int x, int y, int nowX, double[][] distTo,
-                       int[][] edgeTo, double energy) {
-
-        // 已经查找过的（x,y），正在松弛的(nowX,y)
-        if (distTo[nowX][y + 1] > distTo[x][y] + energy) {
-            distTo[nowX][y + 1] = distTo[x][y] + energy;
-            edgeTo[nowX][y + 1] = x;
-        }
-
-
-    }
-
-
-    private void seamTest(int[] seam, int length, int range) {
-        if (seam == null) throw new IllegalArgumentException();
-        if (seam.length != length) throw new IllegalArgumentException();
-
-        for (int i = 0; i < seam.length - 1; i++) {
-            if (seam[i] < 0 || seam[i] > range - 1)
-                throw new IllegalArgumentException();
-            if (Math.abs(seam[i] - seam[i + 1]) > 1) throw new IllegalArgumentException();
-        }
-        if (seam[length - 1] < 0 || seam[length - 1] > range - 1)
-            throw new IllegalArgumentException();
-
-    }
-
-    // remove horizontal seam from current picture
-    public void removeHorizontalSeam(int[] seam) {
-
-        seamTest(seam, width(), height());
-        if (height() <= 1) throw new IllegalArgumentException();
-
-        transpose();
-        removeVerticalSeam(seam);
-        transpose();
-
-
-    }
-
-    // remove vertical seam from current picture
-    public void removeVerticalSeam(int[] seam) {
-        seamTest(seam, height(), width());
-        if (width() <= 1) throw new IllegalArgumentException();
-
-        Picture pic = new Picture(width() - 1, height());
-        //     double[][] energyNew = new double[width() - 1][height()];
-
-
-        for (int y = 0; y < height(); y++) {
-            for (int x = 0; x < seam[y]; x++) {
-                pic.setRGB(x, y, picture.getRGB(x, y));
-                //      energyNew[x][y] = energy[x][y];
-            }
-            //  System.arraycopy(energy[x], 0, energyNew[x], 0, seam[x]);
-
-            for (int x = seam[y]; x < width() - 1; x++) {
-                pic.setRGB(x, y, picture.getRGB(x + 1, y));
-                //      energyNew[x][y] = energy[x + 1][y];
-            }
-            // System.arraycopy(energy[x], seam[x] + 1, energyNew[x], seam[x], width() - seam[x] - 1);
-        }
-
-        picture = pic;
-        //      energy = energyNew;
-
-
-    }
-
-
-    public static void main(String[] args) {
-
-        Picture picture = new Picture("7x3.png");
-        SeamCarver seamCarver = new SeamCarver(picture);
-        int[] solution = seamCarver.findVerticalSeam();
-        seamCarver.findHorizontalSeam();
-        for (int i : solution)
-            StdOut.print(i + ", ");
-        seamCarver.removeVerticalSeam(solution);
     }
 }
