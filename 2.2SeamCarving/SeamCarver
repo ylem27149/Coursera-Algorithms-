@@ -1,17 +1,17 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:尝试引入isHor和isTran两个变量。希望通过减少transpose调用次数来提高性能，效果不明显，并且循环调用还有问题，放弃。
+ *  Description: 重写了relax部分的逻辑，把从上往下改成从下往上。参考http://www.shicheng0829.cn/index.php/2018/11/28/%E3%80%90algorithms-part-ii%E3%80%91week2-seam-carving/
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Picture;
 import edu.princeton.cs.algs4.StdOut;
 
+import java.awt.Color;
+
 public class SeamCarver {
     private int[][] picRGB;
-    private double[][] energy;
-    private boolean isTran;
-    private boolean isHor;
+    //   private double[][] energy;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
@@ -24,20 +24,11 @@ public class SeamCarver {
             for (int row = 0; row < height(); row++)
                 picRGB[row][col] = picture.getRGB(col, row);
 
-        energy = new double[height()][width()];
 
-        for (int col = 0; col < width(); col++)
-            for (int row = 0; row < height(); row++)
-                energy[row][col] = energy(col, row);
-
-        isTran = false;
-        isHor = false;
     }
 
     // current picture
     public Picture picture() {
-        if (isTran) transpose();
-
         Picture picture = new Picture(width(), height());
         for (int col = 0; col < width(); col++)
             for (int row = 0; row < height(); row++)
@@ -63,35 +54,35 @@ public class SeamCarver {
     // energy of pixel at column x and row y
     public double energy(int x, int y) {
 
-        if (!isHor && isTran) transpose();
-
         if (x < 0 || x >= width() || y < 0 || y >= height()) throw new IllegalArgumentException();
 
         if (x == 0 || x == width() - 1 || y == 0 || y == height() - 1) return 1000;
         //边界上的点， return 1000;
 
-        int rgbx1 = picRGB[y][x + 1];
-        int rgbx2 = picRGB[y][x - 1];
-        int rgby1 = picRGB[y + 1][x];
-        int rgby2 = picRGB[y - 1][x];
-        int deltaRx = ((rgbx1 >> 16) & 0xFF) - ((rgbx2 >> 16) & 0xFF);
-        int deltaGx = ((rgbx1 >> 8) & 0xFF) - ((rgbx2 >> 8) & 0xFF);
-        int deltaBx = ((rgbx1 >> 0) & 0xFF) - ((rgbx2 >> 0) & 0xFF);
-        int deltaXSquare = deltaRx * deltaRx + deltaGx * deltaGx + deltaBx * deltaBx;
-        int deltaRy = ((rgby1 >> 16) & 0xFF) - ((rgby2 >> 16) & 0xFF);
-        int deltaGy = ((rgby1 >> 8) & 0xFF) - ((rgby2 >> 8) & 0xFF);
-        int deltaBy = ((rgby1 >> 0) & 0xFF) - ((rgby2 >> 0) & 0xFF);
-        int deltaYSquare = deltaRy * deltaRy + deltaGy * deltaGy + deltaBy * deltaBy;
-        return Math.sqrt(deltaXSquare + deltaYSquare);
+        Color xColor1 = new Color(picRGB[y][x - 1]);       // picture.get(x - 1, y);
+        Color xColor2 = new Color(picRGB[y][x + 1]);       // picture.get(x + 1, y);
+        double xGradient = Math.pow(xColor1.getRed() - xColor2.getRed(), 2) + Math
+                .pow(xColor1.getGreen() - xColor2.getGreen(), 2) + Math
+                .pow(xColor1.getBlue() - xColor2.getBlue(),
+                     2);
+
+        // 乘方 Math.pow(a,b), a 的 b次方。虽然我知道右边其实是个int, 但是pow返回的就是double,所以左边只能用double了
+
+        Color yColor1 = new Color(picRGB[y - 1][x]); // picture.get(x, y - 1);
+        Color yColor2 = new Color(picRGB[y + 1][x]); // picture.get(x, y + 1);
+        double yGradient = Math.pow(yColor1.getRed() - yColor2.getRed(), 2) + Math
+                .pow(yColor1.getGreen() - yColor2.getGreen(), 2) + Math
+                .pow(yColor1.getBlue() - yColor2.getBlue(), 2);
+
+        return Math.sqrt(xGradient + yGradient);
 
     }
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-        isHor = true;
-        if (!isTran) transpose();
+        transpose();
         int[] minPath = findVerticalSeam();
-        isHor = false;
+        transpose();
         return minPath;
 
     }
@@ -107,98 +98,83 @@ public class SeamCarver {
                 tranPic[col][row] = picRGB[row][col];
 
 
-        double[][] ene = new double[width()][height()];
+        // double[][] ene = new double[width()][height()];
 
-        for (int col = 0; col < width(); col++)
-            for (int row = 0; row < height(); row++)
-                ene[col][row] = energy[row][col];
+        //      for (int col = 0; col < width(); col++)
+        //            for (int row = 0; row < height(); row++)
+        //             ene[col][row] = energy[row][col];
 
-        energy = ene;
+        //     energy = ene;
         picRGB = tranPic;
-        isTran = !isTran;
+
     }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
 
-        if (!isHor && isTran) transpose();
         // We want to find the shortest path from any of the W pixels in the top row to any of the W pixels in the bottom row.
         int[] shortestPath = new int[height()]; // 存储最短路径的x坐标
+
         double minEnergy = Double.POSITIVE_INFINITY;
 
+        double[][] energy = new double[height()][width()];
 
-        // When finding a seam, call energy() at most once per pixel. For example, you can save the energies in a local variable energy[][]
-        // and access the information directly from the 2D array (instead of recomputing from scratch).
+        for (int col = 0; col < width(); col++)
+            for (int row = 0; row < height(); row++)
+                energy[row][col] = energy(col, row);
 
-        // Don’t use an explicit EdgeWeightedDigraph. Instead, execute the topological sort algorithm directly on the pixels.
+        // distTo 初始化
 
+        double[][] distTo = new double[height()][width()];
 
-        for (int x = 0; x < width(); x++) {
-            // for 第一排的点，从左向右分别作为起点开始搜索最短路径
-
-            // distTo,EdgeTo 也写成二维数组吧。distTo是double，到达该点的最小距离。EdgeTo是指向该点的最近点，存x就行，y就是当前行号-1。
-            double[][] distTo = new double[width()][height()];
-
-            for (int i = 0; i < width(); i++)
-                for (int j = 0; j < height(); j++)
-                    distTo[i][j] = Double.POSITIVE_INFINITY;        // distTo 初始化
-
-            // Double.POSITIVE_INFINITY
-            // MIN_VALUE
-
-            distTo[x][0] = energy[0][x];    // 本轮搜索的起点（x，0）
-
-
-            int[][] edgeTo = new int[width()][height()];        // 这个第一行没有初始化哦！
-            // 不同第一行的distTo应该，可能会互相影响，还是新建一下吧
-            // 然后找到了再存一下，if更小的话进行更新。
-
-            //  寻找（x,0)到底边的最短距离
-            for (int y = 0; y < height() - 1; y++) {
-                for (int searchX = 0; searchX < width(); searchX++)
-                    // 搜索y行中所有已经更新过distTo的点,也就是从起点到结尾所有的可达点。点的坐标为(searchX,y)。
-
-                    if (distTo[searchX][y] != Double.POSITIVE_INFINITY) {
-                        // 向下搜索
-                        relax(searchX, y, searchX, distTo, edgeTo, energy[y + 1][searchX]);
-                        if (searchX > 0) relax(searchX, y, searchX - 1, distTo, edgeTo,
-                                               energy[y + 1][searchX - 1]);
-                        if (searchX < width() - 1)
-                            relax(searchX, y, searchX + 1, distTo, edgeTo,
-                                  energy[y + 1][searchX + 1]);
-                        // The digraph is acyclic, where there is a downward edge from pixel (x, y) to pixels
-                        // (x − 1, y + 1), (x, y + 1), and (x + 1, y + 1), assuming that the coordinates are in the prescribed range.
-                    }
+        for (int col = 0; col < width(); col++)
+            for (int row = 0; row < height(); row++) {
+                if (row == 0) distTo[row][col] = 1000;
+                else distTo[row][col] = Double.POSITIVE_INFINITY;
             }
-            int bottomMin = -1;      // 最后一行中，distTo最小的点的x坐标
-            for (int i = 0; i < width(); i++)
-                if (distTo[i][height() - 1] < minEnergy) {
-                    bottomMin = i;
-                    minEnergy = distTo[i][height() - 1];
-                }
-            // 如果minEnergy被更新了，就更新shorestPath。
-            if (bottomMin != -1) {
-                int minX = bottomMin;
-                for (int i = 0; i < height(); i++) {
-                    shortestPath[height() - 1 - i] = minX;
-                    minX = edgeTo[minX][height() - 1 - i];
-                }
+
+
+        // Double.POSITIVE_INFINITY
+        // MIN_VALUE
+
+
+        int[][] edgeTo = new int[height()][width()];
+
+        for (int row = 1; row < height(); row++)
+            for (int col = 0; col < width(); col++)
+                relax(row, col, distTo, edgeTo, energy[row][col]);
+
+
+        int bottomMin = -1;      // 最后一行中，distTo最小的点的x坐标
+        for (int i = 0; i < width(); i++)
+            if (distTo[height() - 1][i] < minEnergy) {
+                bottomMin = i;
+                minEnergy = distTo[height() - 1][i];
+            }
+        // 如果minEnergy被更新了，就更新shorestPath。
+        if (bottomMin != -1) {
+            int minX = bottomMin;
+            for (int i = 0; i < height(); i++) {
+                shortestPath[height() - 1 - i] = minX;
+                minX = edgeTo[height() - 1 - i][minX];
             }
         }
+
 
         return shortestPath;
 
     }
 
-    private void relax(int x, int y, int nowX, double[][] distTo,
-                       int[][] edgeTo, double ene) {
+    private void relax(int row, int col, double[][] distTo,
+                       int[][] edgeTo, double energy) {
 
-        // 已经查找过的（x,y），正在松弛的(nowX,y)
-        if (distTo[nowX][y + 1] > distTo[x][y] + ene) {
-            distTo[nowX][y + 1] = distTo[x][y] + ene;
-            edgeTo[nowX][y + 1] = x;
-        }
-
+        // 对点（row,col),查找上方能够到达它的三个节点，找到到该节点的最短距离
+        for (int i = -1; i < 2; i++)
+            if (col + i >= 0 && col + i < width()
+                    && distTo[row][col] > distTo[row - 1][col + i] + energy) {
+                distTo[row][col] = distTo[row - 1][col + i] + energy;
+                edgeTo[row][col] = col + i;
+            }
 
     }
 
@@ -219,48 +195,40 @@ public class SeamCarver {
 
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
-        isHor = true;
-        if (!isTran) transpose();
+        transpose();
         removeVerticalSeam(seam);
-        isHor = false;
+        transpose();
 
     }
 
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam) {
 
-        if (!isHor && isTran) transpose();
-
         seamTest(seam, height(), width());
         if (width() <= 1) throw new IllegalArgumentException();
 
         int[][] pic = new int[height()][width() - 1];
-        double[][] ene = new double[height()][width() - 1];
+        //       double[][] ene = new double[height()][width() - 1];
 
         for (int row = 0; row < height(); row++) {
             System.arraycopy(picRGB[row], 0, pic[row], 0, seam[row]);
             System.arraycopy(picRGB[row], seam[row] + 1, pic[row], seam[row],
                              width() - seam[row] - 1);
-            System.arraycopy(energy[row], 0, ene[row], 0, seam[row]);
-            System.arraycopy(energy[row], 0, ene[row], 0, width() - seam[row] - 1);
+            //      System.arraycopy(energy[row], 0, ene[row], 0, seam[row]);
+            //        System.arraycopy(energy[row], 0, ene[row], 0, width() - seam[row] - 1);
         }
 
         picRGB = pic;
 
-        for (int row = 0; row < height(); row++)
-            for (int col = 0; col < width(); col++) {
-                //   if (row == 0 || row == height() - 1 || col == 0 || col == width() - 2)
-                //        ene[row][col] = 1000;
-                if (seam[row] - col <= 1)
-                    ene[row][col] = energy(col,
-                                           row);       // 因为要调用energy()，所以需要在上面先改掉实例变量。然后width()也改变了
-                //     if ((row < height() - 1 && seam[row + 1] == col) || (row > 0
-                //            && seam[row - 1] == col)
-                //     ene[row][col] = energy(col, row);
-                // 因为seam上下行只能相隔一个身位，这个判断是多余的。
-            }
+        //        for (int row = 0; row < height(); row++)
+        //           for (int col = 0; col < width(); col++) {
 
-        energy = ene;
+        //          if (seam[row] - col <= 1)
+        //                ene[row][col] = energy(col,row);       // 因为要调用energy()，所以需要在上面先改掉实例变量。然后width()也改变了
+
+        //         }
+
+        //     energy = ene;
 
 
     }
