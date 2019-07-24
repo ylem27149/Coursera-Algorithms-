@@ -5,9 +5,9 @@
 可能要注意的点：
 
 1. 行列坐标：Picture调用像素是（列column,行row），而平常习惯用（行，列）来调用二维数组，可能会造成一定的混淆。column < width(), row < height()  。  
-2. relax()：  
-  * 最开始我实现的是对一行每个像素从下往上搜索最短路径，然后找出最短的。但是这样写timing测试无法满分通过。  
-  * 后来[参考](http://www.shicheng0829.cn/index.php/2018/11/28/%E3%80%90algorithms-part-ii%E3%80%91week2-seam-carving/),采用对第二行开始的每个像素从下往上寻找到该像素的最短路径。
+2. relax()：    
+   * 最开始我实现的是对一行每个像素从下往上搜索最短路径，然后找出最短的。但是这样写timing测试无法满分通过。  
+   * 后来[参考](http://www.shicheng0829.cn/index.php/2018/11/28/%E3%80%90algorithms-part-ii%E3%80%91week2-seam-carving/),采用对第二行开始的每个像素从下往上寻找到该像素的最短路径。
   
  中间尝试过的优化：
  
