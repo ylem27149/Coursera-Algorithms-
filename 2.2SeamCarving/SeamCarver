@@ -1,18 +1,17 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
- *  注意，删除后energy数组并不是直接复制，seam附近的点要重新计算energy值！
- *  另外，在energy计算中引入位操作，并不会提高时间空间上的表现。（但是现在调用color次数超了。
+ *  Description:尝试引入isHor和isTran两个变量。希望通过减少transpose调用次数来提高性能，效果不明显，并且循环调用还有问题，放弃。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Picture;
-
-import java.awt.Color;
+import edu.princeton.cs.algs4.StdOut;
 
 public class SeamCarver {
     private int[][] picRGB;
     private double[][] energy;
+    private boolean isTran;
+    private boolean isHor;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
@@ -30,10 +29,15 @@ public class SeamCarver {
         for (int col = 0; col < width(); col++)
             for (int row = 0; row < height(); row++)
                 energy[row][col] = energy(col, row);
+
+        isTran = false;
+        isHor = false;
     }
 
     // current picture
     public Picture picture() {
+        if (isTran) transpose();
+
         Picture picture = new Picture(width(), height());
         for (int col = 0; col < width(); col++)
             for (int row = 0; row < height(); row++)
@@ -59,35 +63,35 @@ public class SeamCarver {
     // energy of pixel at column x and row y
     public double energy(int x, int y) {
 
+        if (!isHor && isTran) transpose();
+
         if (x < 0 || x >= width() || y < 0 || y >= height()) throw new IllegalArgumentException();
 
         if (x == 0 || x == width() - 1 || y == 0 || y == height() - 1) return 1000;
         //边界上的点， return 1000;
 
-        Color xColor1 = new Color(picRGB[y][x - 1]);       // picture.get(x - 1, y);
-        Color xColor2 = new Color(picRGB[y][x + 1]);       // picture.get(x + 1, y);
-        double xGradient = Math.pow(xColor1.getRed() - xColor2.getRed(), 2) + Math
-                .pow(xColor1.getGreen() - xColor2.getGreen(), 2) + Math
-                .pow(xColor1.getBlue() - xColor2.getBlue(),
-                     2);
+        int rgbx1 = picRGB[y][x + 1];
+        int rgbx2 = picRGB[y][x - 1];
+        int rgby1 = picRGB[y + 1][x];
+        int rgby2 = picRGB[y - 1][x];
+        int deltaRx = ((rgbx1 >> 16) & 0xFF) - ((rgbx2 >> 16) & 0xFF);
+        int deltaGx = ((rgbx1 >> 8) & 0xFF) - ((rgbx2 >> 8) & 0xFF);
+        int deltaBx = ((rgbx1 >> 0) & 0xFF) - ((rgbx2 >> 0) & 0xFF);
+        int deltaXSquare = deltaRx * deltaRx + deltaGx * deltaGx + deltaBx * deltaBx;
+        int deltaRy = ((rgby1 >> 16) & 0xFF) - ((rgby2 >> 16) & 0xFF);
+        int deltaGy = ((rgby1 >> 8) & 0xFF) - ((rgby2 >> 8) & 0xFF);
+        int deltaBy = ((rgby1 >> 0) & 0xFF) - ((rgby2 >> 0) & 0xFF);
+        int deltaYSquare = deltaRy * deltaRy + deltaGy * deltaGy + deltaBy * deltaBy;
+        return Math.sqrt(deltaXSquare + deltaYSquare);
 
-        // 乘方 Math.pow(a,b), a 的 b次方。虽然我知道右边其实是个int, 但是pow返回的就是double,所以左边只能用double了
-
-        Color yColor1 = new Color(picRGB[y - 1][x]); // picture.get(x, y - 1);
-        Color yColor2 = new Color(picRGB[y + 1][x]); // picture.get(x, y + 1);
-        double yGradient = Math.pow(yColor1.getRed() - yColor2.getRed(), 2) + Math
-                .pow(yColor1.getGreen() - yColor2.getGreen(), 2) + Math
-                .pow(yColor1.getBlue() - yColor2.getBlue(), 2);
-
-        return Math.sqrt(xGradient + yGradient);
     }
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-
-        transpose();
+        isHor = true;
+        if (!isTran) transpose();
         int[] minPath = findVerticalSeam();
-        transpose();
+        isHor = false;
         return minPath;
 
     }
@@ -111,11 +115,13 @@ public class SeamCarver {
 
         energy = ene;
         picRGB = tranPic;
+        isTran = !isTran;
     }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
 
+        if (!isHor && isTran) transpose();
         // We want to find the shortest path from any of the W pixels in the top row to any of the W pixels in the bottom row.
         int[] shortestPath = new int[height()]; // 存储最短路径的x坐标
         double minEnergy = Double.POSITIVE_INFINITY;
@@ -213,22 +219,20 @@ public class SeamCarver {
 
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
-
-        seamTest(seam, width(), height());
-        if (height() <= 1) throw new IllegalArgumentException();
-
-        transpose();
+        isHor = true;
+        if (!isTran) transpose();
         removeVerticalSeam(seam);
-        transpose();
-
+        isHor = false;
 
     }
 
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam) {
+
+        if (!isHor && isTran) transpose();
+
         seamTest(seam, height(), width());
         if (width() <= 1) throw new IllegalArgumentException();
-
 
         int[][] pic = new int[height()][width() - 1];
         double[][] ene = new double[height()][width() - 1];
@@ -266,11 +270,11 @@ public class SeamCarver {
 
         Picture picture = new Picture("7x3.png");
         SeamCarver seamCarver = new SeamCarver(picture);
-        //    int[] solution = seamCarver.findVerticalSeam();
+        int[] solution = seamCarver.findVerticalSeam();
+        for (int i : solution)
+            StdOut.print(i + ", ");
+        seamCarver.removeVerticalSeam(solution);
         int[] hor = seamCarver.findHorizontalSeam();
-        //      for (int i : solution)
-        //   StdOut.print(i + ", ");
-        //    seamCarver.removeVerticalSeam(solution);
         seamCarver.removeHorizontalSeam(hor);
     }
 }
