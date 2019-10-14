@@ -1,21 +1,17 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
- *  startsWith 返回 true 并不代表对象字符串以整个参数字符串开头，是参数字符串的一部分似乎就会返回true了。
- *  substring endInx 参数理解错误
- *  写了copy boolean数组，但是在函数内修改的时候还是写在原数组里，忘了修改了。
+ *  Description:自己写了一个Trie结构来放Dictionary
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdOut;
 
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.TreeSet;
 
 public class BoggleSolver {
-    private TreeSet<String> dictionary;
+    // private TreeSet<String> dictionary;
+    private Trie dictionary;
 
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
@@ -23,10 +19,10 @@ public class BoggleSolver {
 
         if (dictionary == null) throw new IllegalArgumentException();
 
-        this.dictionary = new TreeSet<String>();
-        // for (String s : dictionary)
-        //     dic.add(s);
-        Collections.addAll(this.dictionary, dictionary);
+        this.dictionary = new Trie();
+        for (String s : dictionary)
+            this.dictionary.add(s);
+
 
     }
 
@@ -83,22 +79,31 @@ public class BoggleSolver {
             String search = word + board.getLetter(row, col);
             String QuWord = search.replace("Q", "QU");
 
-            String ceil = dictionary.ceiling(QuWord);
-            // Returns the least element in this set greater than or equal to the given element, or null if there is no such element.
-            if (ceil != null && ceil.length() >= QuWord.length()) {
-
-                String s = ceil.substring(0, QuWord.length());
-
-                if (s.compareTo(QuWord) == 0) {
-                    // if there exist word in the dictionary use QuWord as predix, continue to search its neighbors
-                    copy[row][col] = true;
-                    if (scoreOf(QuWord) > 0) stack.add(QuWord);
-
-                    searchWord(row, col, board, search, stack, copy);
-
-                }
-
+            if (dictionary.hasPrefix(QuWord)) {
+                copy[row][col] = true;
+                if (scoreOf(QuWord) > 0) stack.add(QuWord);
+                searchWord(row, col, board, search, stack, copy);
             }
+
+
+            /**
+             String ceil = dictionary.ceiling(QuWord);
+             // Returns the least element in this set greater than or equal to the given element, or null if there is no such element.
+             if (ceil != null && ceil.length() >= QuWord.length()) {
+
+             String s = ceil.substring(0, QuWord.length());
+
+             if (s.compareTo(QuWord) == 0) {
+             // if there exist word in the dictionary use QuWord as predix, continue to search its neighbors
+             copy[row][col] = true;
+             if (scoreOf(QuWord) > 0) stack.add(QuWord);
+
+             searchWord(row, col, board, search, stack, copy);
+
+             }
+
+             }
+             **/
 
         }
     }
