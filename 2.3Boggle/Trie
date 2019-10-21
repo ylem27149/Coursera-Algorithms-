@@ -1,7 +1,7 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description:  删掉了实例变量n
  **************************************************************************** */
 
 public class Trie {
@@ -10,7 +10,6 @@ public class Trie {
     // the alphabet consists of only the 26 letters A through Z.
 
     private Node root;      // root of trie
-    private int n;          // number of keys in trie
 
     // R-way trie node
     private static class Node {
@@ -41,8 +40,7 @@ public class Trie {
     private Node get(Node x, String key, int d) {
         if (x == null) return null;
         if (d == key.length()) return x;
-        char c = key.charAt(d);
-        int index = c - 'A';
+        int index = key.charAt(d) - 'A';
         return get(x.next[index], key, d + 1);
     }
 
@@ -60,12 +58,10 @@ public class Trie {
     private Node add(Node x, String key, int d) {
         if (x == null) x = new Node();
         if (d == key.length()) {
-            if (!x.isString) n++;
             x.isString = true;
         }
         else {
-            char c = key.charAt(d);
-            int index = c - 'A';
+            int index = key.charAt(d) - 'A';
             x.next[index] = add(x.next[index], key, d + 1);
         }
         return x;
