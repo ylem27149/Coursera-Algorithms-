@@ -1,7 +1,9 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:自己写了一个Trie结构来放Dictionary
+ *  Description:
+ *  把marked改成实例变量。并且不再在hasPre中创建marked的副本，通过在SearchWord结尾把当前节点false来起到相同功能。
+ *  取消了对String.replace的调用，通过检测每个节点是否为Q来实现相同的功能
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.In;
@@ -12,6 +14,8 @@ import java.util.HashSet;
 public class BoggleSolver {
     // private TreeSet<String> dictionary;
     private Trie dictionary;
+    private boolean[][] marked;
+
 
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
@@ -33,14 +37,18 @@ public class BoggleSolver {
 
         HashSet<String> words = new HashSet<String>();
 
+
         // the set of all valid words.
         // return a valid once ,even though it can be formed in more than one way
 
         for (int i = 0; i < board.rows(); i++)
             for (int j = 0; j < board.cols(); j++) {
-                boolean[][] marked = new boolean[board.rows()][board.cols()];
+                marked = new boolean[board.rows()][board.cols()];
                 marked[i][j] = true;
-                searchWord(i, j, board, board.getLetter(i, j) + "", words, marked);
+                if (board.getLetter(i, j) == 'Q')
+                    searchWord(i, j, board, "QU", words);
+                else
+                    searchWord(i, j, board, board.getLetter(i, j) + "", words);
             }
 
         // search every node in board to find valid words
@@ -49,45 +57,56 @@ public class BoggleSolver {
     }
 
     private void searchWord(int row, int col, BoggleBoard board, String word,
-                            HashSet<String> stack, boolean[][] marked) {
+                            HashSet<String> hashset) {
         // search every node's  eight neighbors to find valid word
 
-        hasPre(word, row + 1, col, board, stack, marked);
-        hasPre(word, row + 1, col + 1, board, stack, marked);
-        hasPre(word, row + 1, col - 1, board, stack, marked);
-        hasPre(word, row, col + 1, board, stack, marked);
-        hasPre(word, row, col - 1, board, stack, marked);
-        hasPre(word, row - 1, col, board, stack, marked);
-        hasPre(word, row - 1, col + 1, board, stack, marked);
-        hasPre(word, row - 1, col - 1, board, stack, marked);
+        
+        for (int i = -1; i < 2; i++)
+            for (int j = -1; j < 2; j++) {
+                hasPre(word, row + i, col + j, board, hashset);
+            }
+        marked[row][col] = false;
 
+        /**
+         hasPre(word, row + 1, col, board, stack, marked);
+         hasPre(word, row + 1, col + 1, board, stack, marked);
+         hasPre(word, row + 1, col - 1, board, stack, marked);
+         hasPre(word, row, col + 1, board, stack, marked);
+         hasPre(word, row, col - 1, board, stack, marked);
+         hasPre(word, row - 1, col, board, stack, marked);
+         hasPre(word, row - 1, col + 1, board, stack, marked);
+         hasPre(word, row - 1, col - 1, board, stack, marked);
+         **/
     }
 
 
-    private void hasPre(String word, int row, int col, BoggleBoard board, HashSet<String> stack,
-                        boolean[][] marked) {
+    private void hasPre(String word, int row, int col, BoggleBoard board, HashSet<String> hashset
+    ) {
+        String search;
         // to find if there is any word in dictronary has prefix as word + board.getLetter(row,col)
         // the input word use "Q" representing "QU"
         if (row >= 0 && row < board.rows() && col >= 0 && col < board.cols() && !marked[row][col]) {
 
-            boolean[][] copy = new boolean[board.rows()][board.cols()];
+            /**
+             boolean[][] copy = new boolean[row][col];
 
-            for (int i = 0; i < board.rows(); i++)
-                for (int j = 0; j < board.cols(); j++)
-                    copy[i][j] = marked[i][j];
+             for (int i = 0; i < board.rows(); i++)
+             for (int j = 0; j < col; j++)
+             marked[i][j] = marked[i][j];
+             **/
+            if (board.getLetter(row, col) == 'Q')
+                search = word + "QU";
+            else search = word + board.getLetter(row, col);
 
-            String search = word + board.getLetter(row, col);
-            String QuWord = search.replace("Q", "QU");
-
-            if (dictionary.hasPrefix(QuWord)) {
-                copy[row][col] = true;
-                if (scoreOf(QuWord) > 0) stack.add(QuWord);
-                searchWord(row, col, board, search, stack, copy);
+            if (dictionary.hasPrefix(search)) {
+                marked[row][col] = true;
+                if (scoreOf(search) > 0) hashset.add(search);
+                searchWord(row, col, board, search, hashset);
             }
 
 
             /**
-             String ceil = dictionary.ceiling(QuWord);
+             String ceil = dictionary.ceiling(search);
              // Returns the least element in this set greater than or equal to the given element, or null if there is no such element.
              if (ceil != null && ceil.length() >= QuWord.length()) {
 
