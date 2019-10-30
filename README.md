@@ -1,8 +1,5 @@
 # Coursera-Algorithms-
 
-之前只在学校学过学过C，通过这门课练习了常用算法和java，收获很大。  
-写代码真有趣=v=  
-
 配套书为算法（第四版）。  
 中文正版电子书[链接](https://www.ituring.com.cn/book/875)，从这里下载的电子书有Mobi和pdf版本，pdf是可以搜索的，很方便。  
 [英文书官网](https://algs4.cs.princeton.edu/home/)，可以免费看，但网站上的内容并没有包括实体书中的所有内容，只看这个可能会不好理解。  
