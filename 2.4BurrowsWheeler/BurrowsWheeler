@@ -1,0 +1,76 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.BinaryStdIn;
+import edu.princeton.cs.algs4.BinaryStdOut;
+
+import java.util.Arrays;
+
+public class BurrowsWheeler {
+
+    // apply Burrows-Wheeler transform,
+    // reading from standard input and writing to standard output
+    public static void transform() {
+        String s = BinaryStdIn.readString();
+        CircularSuffixArray cir = new CircularSuffixArray(s);
+        //cir.index[first] = 0
+        for (int i = 0; i < s.length(); i++)
+            if (cir.index(i) == 0) {
+                BinaryStdOut.write(i);
+
+                break;
+            }
+        for (int i = 0; i < s.length(); i++)
+            if (cir.index(i) != 0)
+                BinaryStdOut.write(s.charAt(cir.index(i) - 1));
+            else BinaryStdOut.write(s.charAt(s.length() - 1));
+
+        BinaryStdOut.close();
+    }
+
+    // apply Burrows-Wheeler inverse transform,
+    // reading from standard input and writing to standard output
+    public static void inverseTransform() {
+        int first = BinaryStdIn
+                .readInt();      // row first in sorted suffixes order is the original string
+        String t = BinaryStdIn.readString();        // the last column in the sorted Suffixes
+        char[] last = t.toCharArray();
+        char[] firCon = t
+                .toCharArray();        // the first column in sorted suffixes has the same char as the last column, but in sorted order
+        Arrays.sort(firCon);
+        int[] next = new int[t
+                .length()];   //  If the jth original suffix (original string, shifted j characters to the left) is the ith row in the sorted order, we define next[i] to be the row in the sorted order where the (j + 1)st original suffix appears. For example, if first is the row in which the original input string appears, then next[first] is the row in the sorted order where the 1st original suffix (the original string left-shifted by 1) appears;
+        // For the Burrows–Wheeler inverse transform, does next[0] always equal first? No. This is just a coincidence with the input string "ABRACADABRA!". Consider any two input strings that are cyclic rotations of one another, e.g., "ABRACADABRA!" and "CADABRA!ABRA". They will have the same sorted suffixes and t[] array—their only difference will be in the index first.
+        // find next[i]
+        for (int i = 0; i < t.length(); i++)
+            for (int j = 0; j < t.length(); j++) {
+                if (firCon[i] == last[j]) {
+                    if (i == 0 || next[i - 1] != j)       //    firCon[i] != firCon[i - 1]
+                        next[i]
+                                = j;      // 如果字母是唯一的。如果不是唯一的，就继续往下找(运行内循环）。这种写法多个相同的也是可以找的，并且满足If sorted row i and j both start with the same character and i < j, then next[i] < next[j].
+                }
+
+            }
+        // output original string
+        // Since next[first] = 7, the next original suffix appears in row 7; thus, the next character in the original input string is 'B'. Since next[next[first]] = 11, the next original suffix appears in row 11; thus, the next character in the original input string is 'R'.
+        int index = first;
+        for (int i = 0; i < t.length(); i++) {
+            BinaryStdOut.write(firCon[index]);
+            index = firCon[index];
+        }
+        BinaryStdOut.close();
+    }
+
+    // if args[0] is "-", apply Burrows-Wheeler transform
+    // if args[0] is "+", apply Burrows-Wheeler inverse transform
+    public static void main(String[] args) {
+        if (args[0].equals("-")) transform();
+        if (args[0].equals("+")) inverseTransform();
+            
+
+    }
+
+}
