@@ -1,0 +1,64 @@
+/* *****************************************************************************
+ *  Name:
+ *  Date:
+ *  Description:
+ **************************************************************************** */
+
+import edu.princeton.cs.algs4.BinaryStdIn;
+import edu.princeton.cs.algs4.BinaryStdOut;
+
+import java.util.ArrayList;
+
+public class MoveToFront {
+    private static final int R = 256;
+
+    // apply move-to-front encoding, reading from standard input and writing to standard output
+    public static void encode() {
+        ArrayList<Character> seq
+                = new ArrayList<Character>();      // the sequence of the 256 extended ASCII characters
+        // 因为有取出中间元素放在最前，其他的都向后移动的操作，用链表。又因为要输出序列中字符的index，所以需要Array
+        char inputC;        // input char
+
+        for (int i = 0; i < R; i++)
+            seq.add((char) i);
+        // 大概是这样吧……用（char）和''的不同点？这样就是把数字对应过去了吧？
+
+
+        while (!BinaryStdIn.isEmpty()) {
+            inputC = BinaryStdIn.readChar();        // Initialize input char
+            BinaryStdOut.write(seq.indexOf(inputC));    // output the index
+            seq.remove(inputC);
+            seq.add(0, inputC);         // move to front
+        }
+
+        BinaryStdOut.close();
+    }
+
+    // apply move-to-front decoding, reading from standard input and writing to standard output
+    public static void decode() {
+        ArrayList<Character> seq
+                = new ArrayList<Character>();      // the sequence of the 256 extended ASCII characters
+        int input;  // the index in the sequence
+
+        //Initialize seq
+        for (int i = 0; i < R; i++)
+            seq.add((char) i);
+
+        while (!BinaryStdIn.isEmpty()) {
+            input = (int) BinaryStdIn.readChar();        // Initialize input
+            BinaryStdOut.write(seq.get(input));    // output the char
+            seq.add(0, seq.get(input));       // add to front
+            seq.remove(input);              // remove the element in the position 'input'
+
+        }
+
+        BinaryStdOut.close();
+    }
+
+    // if args[0] is "-", apply move-to-front encoding
+    // if args[0] is "+", apply move-to-front decoding
+    public static void main(String[] args) {
+        if (args[0].equals("-")) encode();
+        if (args[0].equals("+")) decode();
+    }
+}
