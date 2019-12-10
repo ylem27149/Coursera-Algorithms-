@@ -1,9 +1,9 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:ArrayIndex outofBoundary 的 bug 第一遍很难发现啊（抱头）
- *  compareChar之中初始化被比较的字母数组的时候错误的写了双层for，会导致每个元素都被初始化成最后一个序列对应的值
- *  说起来，每一个元素都一样那种极端情况，我没有处理。所以对m应该限制一下小于length，嗯。corner test没提到，先不写吧。
+ *  Description: 
+ *  修正了超出范围的字符查找逻辑
+ *  增加相同suffix情况的处理
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.StdIn;
@@ -30,50 +30,54 @@ public class CircularSuffixArray {
         for (int i = 0; i < s.length(); i++)
             firstCharIndex.add(i);
         compareChar(firstCharIndex, 0, 0);
-        /***
-         char[] sortedChar = firstChar.clone();
-         Arrays.sort(sortedChar);
-         ArrayList<Character> nextChar = new ArrayList<Character>();
-         for (int i = 0; i < s.length(); i++)
-         for (int j = 0; j < s.length(); j++) {
-         if (sortedChar[i] == firstChar[j] && sortedChar[i] == sortedChar[i + 1])
-         nextChar.add(firstChar[j + 1]);
-         if (sortedChar[i] == firstChar[j] && sortedChar[i] != sortedChar[i + 1])
-         index[i] = j;
-         }
-         ***/
-        // if firstChar 相同，再去比下一个字母。
-        // if (sortedChar[i] == sortedChar[i + 1])
+
 
     }
 
     private void compareChar(ArrayList<Integer> firstCharIndex, int m, int s)
-    //  firstCharIndex is the fisrt character index in original circular suffix
-    // this function is used to compare mth character in those circular suffix
-    // s is the start index of the same Suffix substrings in sorted array
+    // compare some suffixes which has same prefix
+    // this function is used to compare mth character in those circular suffixes
+    //  firstCharIndex is the index in original circular suffix.Because the number of suffixes to be compared can be different, so choose the datatype ArrayList
+    // s is the first suffx's index in sorted array, which was compared because of the same prefix
     {
-        ArrayList<Integer> next = new ArrayList<Integer>();
-        char[] sort = new char[firstCharIndex.size()];
-        for (int i = 0; i < sort.length; i++)
-            if (firstCharIndex.get(i) + m < length)
-                sort[i] = firstChar[firstCharIndex.get(i) + m];
-            else sort[i] = firstChar[firstCharIndex.get(i) + m - length
-                    + 1];   // if f+m out of boundary
+        ArrayList<Integer> next
+                = new ArrayList<Integer>();     // next firstCharIndex.that is, the suffixes which has same mth character
+        char[] sort = new char[firstCharIndex.size()];      // mth character in each suffixes
 
-        // 其实也可以写一个被比较字母的数组，ith字母对应firstCharIndex 中ith 的字符串首字母。
+        // the nontrivial circular case, which has some same suffixes
+        if (m == length) {
+            int i = 0;
+            for (int f : firstCharIndex) {
+                index[s + i] = f;
+                i++;
+                // 其实是一样的序列，不过这里的index[]的排序规则是每个排名有且仅有一人，所以就按f里的前后顺序排一下吧……
+            }
+            return;
+        }
+
+        // trivial case
+        for (int i = 0; i < sort.length; i++)
+            if (firstCharIndex.get(i) + m
+                    < length)     // firstCharIndex.get(i) + m  is the char's index in the original string
+                sort[i] = firstChar[firstCharIndex.get(i) + m];
+            else
+                sort[i] = firstChar[firstCharIndex.get(i) + m - length];   // if f+m out of boundary
+
+
         Arrays.sort(sort);
 
-        for (
-                int i = 0;
-                i < sort.length; i++) {
-            if (i == 0 || sort[i] != sort[i - 1])
-                for (int f : firstCharIndex) {
+        for (int i = 0; i < sort.length; i++) {  // search all sorted characters. sort[i]
+            if (i == 0 || sort[i] != sort[i
+                    - 1])       // if sort[i] is a new character(different form its left neighbor)
+                for (int f : firstCharIndex) {      // find sort[i] corresponding suffix index 'f'
                     if ((f + m < length && sort[i] == firstChar[f + m]) || (f + m >= length
-                            && sort[i] == firstChar[f + m - length + 1])) {
-                        if (i < sort.length - 1 && sort[i] == sort[i + 1])
+                            && sort[i] == firstChar[f + m - length])) {
+                        if (i < sort.length - 1 && sort[i] == sort[i
+                                + 1])      // line 55 premise sort[i] is a new element, so just have to check if it has a same right neighbor
+                            // if there are same characters in sortedChar, compare the next charater in those suffix
                             next.add(f);
                         else
-                            index[i + s] = f;   // 其实这里可以接个break/continue。结束在f中的查找。唔不过好像提升不大，不说了。
+                            index[i + s] = f;
                     }
                 }
             if (next.size() != 0) {
@@ -86,35 +90,6 @@ public class CircularSuffixArray {
     }
 
 
-    /***
-     // A natural approach is to define a nested class CircularSuffix that represents a circular suffix implicitly
-     // (via a reference to the input string and a pointer to the first character in the circular suffix).
-     // You might also consider making CircularSuffix implement the Comparable<CircularSuffix> interface.
-     // Note, that while this is, perhaps, the cleanest solution, it is not the fastest.
-     private class CircularSuffix {
-     // 这个的意思是，每个内部类代表一行吗。这样可比较倒是能理解了。
-     private String s;
-     private char[] firstChar;       // the first character in the original circular suffix
-     private int[] index;            // the index of the original suffix that appears ith in the sorted array
-
-     public CircularSuffix(String s) {
-     this.s = s;
-     index = new int[s.length()];
-     firstChar = s.toCharArray();
-     char[] sortedChar = firstChar.clone();
-     Arrays.sort(sortedChar);
-     for (int i = 0; i < s.length(); i++)
-     for (int j = 0; j < s.length(); j++)
-     if (firstChar[i] == sortedChar[j])
-     index[i] = sortedChar[j];   // if firstChar 相同，再去比下一个字母。
-
-     }
-
-     public int Index(int i) {
-     return index[i];
-     }
-     }
-     ***/
     // length of s
     public int length() {
         return length;
