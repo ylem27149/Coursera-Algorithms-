@@ -1,7 +1,10 @@
 /* *****************************************************************************
  *  Name:
  *  Date:
- *  Description:
+ *  Description: 
+ *  修正了next[]构造时候的逻辑
+ *  在inverseTransform()中，输出的时候是让index = next[]，不是firstCon[]
+ *  在debug的时候，又一次遇到了输入输出的问题。这个问题从开头卡到结尾。
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.BinaryStdIn;
@@ -45,12 +48,26 @@ public class BurrowsWheeler {
                 .length()];   //  If the jth original suffix (original string, shifted j characters to the left) is the ith row in the sorted order, we define next[i] to be the row in the sorted order where the (j + 1)st original suffix appears. For example, if first is the row in which the original input string appears, then next[first] is the row in the sorted order where the 1st original suffix (the original string left-shifted by 1) appears;
         // For the Burrows–Wheeler inverse transform, does next[0] always equal first? No. This is just a coincidence with the input string "ABRACADABRA!". Consider any two input strings that are cyclic rotations of one another, e.g., "ABRACADABRA!" and "CADABRA!ABRA". They will have the same sorted suffixes and t[] array—their only difference will be in the index first.
         // find next[i]
+        // If sorted row i and j both start with the same character and i < j, then next[i] < next[j].
         for (int i = 0; i < t.length(); i++)
             for (int j = 0; j < t.length(); j++) {
                 if (firCon[i] == last[j]) {
-                    if (i == 0 || next[i - 1] != j)       //    firCon[i] != firCon[i - 1]
-                        next[i]
-                                = j;      // 如果字母是唯一的。如果不是唯一的，就继续往下找(运行内循环）。这种写法多个相同的也是可以找的，并且满足If sorted row i and j both start with the same character and i < j, then next[i] < next[j].
+
+                    //如果firstCon[i]== firCon[i+1]，就继续寻找j后面的元素，并且进入到下一个i
+                    // 除了单个的元素，以及一堆相同元素中的最后一个，都会进入这个条件
+                    // 这里再分这两种情况，是因为在第一种情况下j不会再从0开始找，而是去找下一个相同元素
+                    // 而第二种情况就j从0开始寻找新的i的对应值
+                    if (i != t.length() - 1 && firCon[i] == firCon[i
+                            + 1]) {
+                        next[i] = j;
+                        i++;
+                    }
+                    // 在单个元素以及一堆相同元素的最后一个的情况，下一个元素都是新的，那么就可以结束j的搜索，去找下一个i对应的j
+                    else {
+                        next[i] = j;
+                        break;
+                    }
+
                 }
 
             }
@@ -59,7 +76,7 @@ public class BurrowsWheeler {
         int index = first;
         for (int i = 0; i < t.length(); i++) {
             BinaryStdOut.write(firCon[index]);
-            index = firCon[index];
+            index = next[index];
         }
         BinaryStdOut.close();
     }
@@ -69,7 +86,7 @@ public class BurrowsWheeler {
     public static void main(String[] args) {
         if (args[0].equals("-")) transform();
         if (args[0].equals("+")) inverseTransform();
-            
+
 
     }
 
